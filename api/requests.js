@@ -7,6 +7,35 @@ function clean(value, max) { return typeof value === 'string' ? value.replace(/[
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
 
 module.exports = async (req, res) => {
+  if (req.method === 'GET') {
+    if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again.' });
+    try {
+      env();
+      const sql = database();
+      if (req.query && req.query.id) {
+        const [row] = await sql`
+          SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent
+          FROM contract_requests
+          WHERE id = ${req.query.id}
+          LIMIT 1
+        `;
+        if (!row) return json(res, 404, { error: 'Contract request not found.' });
+        return json(res, 200, { ok: true, request: row });
+      }
+
+      const rows = await sql`
+        SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, status, created_at, signed_at, signer_name
+        FROM contract_requests
+        ORDER BY created_at DESC
+        LIMIT 100
+      `;
+      return json(res, 200, { ok: true, requests: rows });
+    } catch (error) {
+      console.error('List contract requests failed:', error.message);
+      return json(res, 500, { error: 'Could not load contract requests.' });
+    }
+  }
+
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
   if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again before sending a request.' });
   try {

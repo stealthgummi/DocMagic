@@ -4,25 +4,130 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#f6f5f1">
-  <title>Clause — Simple contract maker</title>
+  <title>Clause &mdash; 7Layer Studio Contracts &amp; Inbox</title>
   <style>
     :root{--ink:#232822;--muted:#73796f;--line:#e7e8e1;--paper:#fffefa;--bg:#f6f5f1;--green:#315d45;--soft:#e9f0e9;--gold:#d9a55b;--shadow:0 12px 35px #303b3010}
     *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}
-    .topbar{height:70px;padding:0 34px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:#fbfaf7;position:sticky;top:0;z-index:5}.brand{display:flex;align-items:center;gap:11px;font-size:19px;font-weight:700;letter-spacing:-.5px}.brandmark{width:31px;height:31px;border-radius:9px;background:var(--green);color:#fff;display:grid;place-items:center;font-family:Georgia,serif;font-size:20px}.top-right{display:flex;gap:12px;align-items:center}.autosave{font-size:12px;color:var(--muted);margin-right:8px}.btn{border:1px solid #dfe1d9;background:#fff;border-radius:9px;padding:9px 14px;color:var(--ink);font-weight:600}.btn:hover{background:#f8f8f4}.btn.primary{background:var(--green);color:#fff;border-color:var(--green)}.btn.primary:hover{background:#274b38}.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}.btn.small{padding:7px 10px;font-size:12px}
-    .login-gate{position:fixed;inset:0;z-index:20;background:#f6f5f1;display:grid;place-items:center;padding:20px}.login-card{width:min(400px,100%);background:white;border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:var(--shadow)}.login-card h1{font:500 27px Georgia,serif;margin:16px 0 6px}.login-card p{color:var(--muted);font-size:13px;margin:0 0 18px}.login-card input{width:100%;padding:11px;border:1px solid #dfe1d9;border-radius:8px;margin-bottom:11px}.login-error{font-size:12px;color:#9d382e;min-height:20px;margin-bottom:8px}.hidden{display:none!important}
-    .layout{max-width:1440px;margin:0 auto;padding:34px 36px;display:grid;grid-template-columns:minmax(340px,450px) minmax(480px,1fr);gap:34px;align-items:start}.intro{margin-bottom:25px}.eyebrow{text-transform:uppercase;letter-spacing:1.4px;font-size:10px;color:var(--green);font-weight:750}.intro h1{font:500 30px/1.2 Georgia,serif;letter-spacing:-.5px;margin:7px 0 7px}.intro p{margin:0;color:var(--muted);font-size:13px}.editor-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:23px 24px;box-shadow:var(--shadow)}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.section-head h2{font-size:14px;margin:0;font-weight:700}.step{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}.field{margin:0 0 15px}.field label{display:block;font-size:12px;font-weight:650;margin-bottom:6px}.field input,.field textarea{width:100%;border:1px solid #e1e3dc;border-radius:8px;background:#fffefa;padding:10px 11px;outline:none;color:var(--ink)}.field input:focus,.field textarea:focus,.clause:focus{border-color:#86a28e;box-shadow:0 0 0 3px #315d4510}.field input::placeholder,.field textarea::placeholder{color:#a6aaa1}.field textarea{resize:vertical;min-height:78px}.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}.divider{height:1px;background:var(--line);margin:19px 0}.template-select{border:1px solid #e1e3dc;border-radius:8px;padding:9px 10px;background:#fffefa;color:var(--ink);font-size:12px}.clause{width:100%;min-height:143px;border:1px solid #e1e3dc;border-radius:8px;background:#fffefa;padding:12px;resize:vertical;line-height:1.55;color:var(--ink)}.hint{font-size:11px;color:var(--muted);margin:7px 0 0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:19px}.actions .primary{flex:1}.secure-note{display:flex;gap:9px;align-items:flex-start;background:#f5f7f2;padding:11px 12px;border-radius:8px;margin-top:17px;font-size:11px;color:#606b60}.secure-note b{color:var(--green)}.captcha-wrap{margin-top:14px}.captcha-wrap p{font-size:11px;color:var(--muted);margin:4px 0}
-    .preview-wrap{position:sticky;top:94px}.preview-bar{display:flex;justify-content:space-between;align-items:center;margin:0 0 12px;padding:0 3px}.preview-label{font-size:12px;font-weight:700}.preview-label span{font-weight:400;color:var(--muted);margin-left:7px}.preview-actions{display:flex;gap:8px}.paper{min-height:745px;background:var(--paper);border:1px solid #e8e6df;border-radius:5px;box-shadow:0 15px 45px #262b2212;padding:62px 68px;position:relative;overflow:hidden}.paper:before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--green)}.doc-brand{font-size:11px;color:var(--green);font-weight:750;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:35px}.paper h2{font:500 27px/1.2 Georgia,serif;letter-spacing:-.3px;margin:0 0 9px}.doc-subtitle{color:var(--muted);font-size:12px;padding-bottom:24px;border-bottom:1px solid var(--line);margin-bottom:25px}.doc-body{font:14px/1.8 Georgia,serif;white-space:pre-wrap;min-height:140px}.doc-body p{margin:0 0 17px}.doc-meta{font:12px/1.7 ui-sans-serif,system-ui,sans-serif;background:#f7f7f2;border-radius:7px;padding:13px 15px;margin:0 0 24px}.doc-meta strong{color:#4f5f50}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:60px}.sig-line{border-top:1px solid #9ba096;padding-top:8px;font-size:11px;color:var(--muted)}.sig-line strong{display:block;color:var(--ink);font-size:12px;margin-bottom:2px}.signature-status{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border-radius:20px;background:#f1f1ec;padding:4px 8px;font:10px ui-sans-serif,system-ui,sans-serif;color:#74786e}.status-dot{width:6px;height:6px;border-radius:50%;background:#b2b5ac}.footer-note{text-align:center;margin-top:18px;font-size:10px;color:#a0a39b}.empty{color:#9a9e95;font-style:italic}.toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,16px);background:#252e27;color:white;padding:10px 16px;border-radius:9px;opacity:0;transition:.2s;pointer-events:none;z-index:9;font-size:12px}.toast.show{opacity:1;transform:translate(-50%,0)}
-    @media(max-width:1000px){.layout{grid-template-columns:minmax(310px,430px) minmax(390px,1fr);gap:20px;padding:24px 20px}.paper{padding:50px 40px}}@media(max-width:760px){.topbar{padding:0 16px;height:62px}.autosave{display:none}.layout{display:flex;flex-direction:column;padding:23px 14px;gap:22px}.editor-card{padding:19px}.preview-wrap{position:static;width:100%}.paper{min-height:650px;padding:48px 32px}.intro h1{font-size:27px}}
-    @media print{body{background:white}.topbar,.editor-column,.preview-bar,.footer-note,.toast{display:none!important}.layout{display:block;padding:0;max-width:none}.preview-wrap{position:static}.paper{box-shadow:none;border:0;border-radius:0;min-height:0;padding:35px 48px}.paper:before{display:none}}
+    .topbar{height:70px;padding:0 34px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:#fbfaf7;position:sticky;top:0;z-index:5}
+    .brand{display:flex;align-items:center;gap:11px;font-size:19px;font-weight:700;letter-spacing:-.5px}
+    .brandmark{width:31px;height:31px;border-radius:9px;background:var(--green);color:#fff;display:grid;place-items:center;font-family:Georgia,serif;font-size:20px}
+    .top-left{display:flex;align-items:center;gap:24px}
+    .nav-tabs{display:flex;gap:6px}
+    .top-right{display:flex;gap:12px;align-items:center}
+    .autosave{font-size:12px;color:var(--muted);margin-right:8px}
+    .btn{border:1px solid #dfe1d9;background:#fff;border-radius:9px;padding:9px 14px;color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+    .btn:hover{background:#f8f8f4}
+    .btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+    .btn.primary:hover{background:#274b38}
+    .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+    .btn.small{padding:7px 11px;font-size:12px}
+    .tab-btn{border-color:transparent;background:transparent;color:var(--muted);font-weight:600}
+    .tab-btn:hover{background:#edece6;color:var(--ink)}
+    .tab-btn.active{background:var(--soft);color:var(--green);border-color:#d4e0d4}
+    .tab-badge{background:#e1e4dc;color:var(--ink);padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700}
+    .tab-btn.active .tab-badge{background:var(--green);color:#fff}
+    
+    .login-gate{position:fixed;inset:0;z-index:20;background:#f6f5f1;display:grid;place-items:center;padding:20px}
+    .login-card{width:min(400px,100%);background:white;border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:var(--shadow)}
+    .login-card h1{font:500 27px Georgia,serif;margin:16px 0 6px}
+    .login-card p{color:var(--muted);font-size:13px;margin:0 0 18px}
+    .login-card input{width:100%;padding:11px;border:1px solid #dfe1d9;border-radius:8px;margin-bottom:11px}
+    .login-error{font-size:12px;color:#9d382e;min-height:20px;margin-bottom:8px}
+    .hidden{display:none!important}
+    
+    .layout{max-width:1440px;margin:0 auto;padding:34px 36px;display:grid;grid-template-columns:minmax(340px,450px) minmax(480px,1fr);gap:34px;align-items:start}
+    .layout-full{max-width:1440px;margin:0 auto;padding:34px 36px}
+    .intro{margin-bottom:25px}
+    .eyebrow{text-transform:uppercase;letter-spacing:1.4px;font-size:10px;color:var(--green);font-weight:750}
+    .intro h1{font:500 30px/1.2 Georgia,serif;letter-spacing:-.5px;margin:7px 0 7px}
+    .intro p{margin:0;color:var(--muted);font-size:13px}
+    .editor-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:23px 24px;box-shadow:var(--shadow)}
+    .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .section-head h2{font-size:14px;margin:0;font-weight:700}
+    .step{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+    .field{margin:0 0 15px}
+    .field label{display:block;font-size:12px;font-weight:650;margin-bottom:6px}
+    .field input,.field textarea{width:100%;border:1px solid #e1e3dc;border-radius:8px;background:#fffefa;padding:10px 11px;outline:none;color:var(--ink)}
+    .field input:focus,.field textarea:focus,.clause:focus{border-color:#86a28e;box-shadow:0 0 0 3px #315d4510}
+    .field input::placeholder,.field textarea::placeholder{color:#a6aaa1}
+    .field textarea{resize:vertical;min-height:78px}
+    .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .divider{height:1px;background:var(--line);margin:19px 0}
+    .template-select{border:1px solid #e1e3dc;border-radius:8px;padding:9px 10px;background:#fffefa;color:var(--ink);font-size:12px}
+    .clause{width:100%;min-height:143px;border:1px solid #e1e3dc;border-radius:8px;background:#fffefa;padding:12px;resize:vertical;line-height:1.55;color:var(--ink)}
+    .hint{font-size:11px;color:var(--muted);margin:7px 0 0}
+    .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:19px}
+    .actions .primary{flex:1}
+    .secure-note{display:flex;gap:9px;align-items:flex-start;background:#f5f7f2;padding:11px 12px;border-radius:8px;margin-top:17px;font-size:11px;color:#606b60}
+    .secure-note b{color:var(--green)}
+    .captcha-wrap{margin-top:14px}
+    .captcha-wrap p{font-size:11px;color:var(--muted);margin:4px 0}
+    
+    .preview-wrap{position:sticky;top:94px}
+    .preview-bar{display:flex;justify-content:space-between;align-items:center;margin:0 0 12px;padding:0 3px}
+    .preview-label{font-size:12px;font-weight:700}
+    .preview-label span{font-weight:400;color:var(--muted);margin-left:7px}
+    .preview-actions{display:flex;gap:8px}
+    .paper{min-height:745px;background:var(--paper);border:1px solid #e8e6df;border-radius:5px;box-shadow:0 15px 45px #262b2212;padding:62px 68px;position:relative;overflow:hidden}
+    .paper:before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--green)}
+    .doc-brand{font-size:11px;color:var(--green);font-weight:750;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:35px}
+    .paper h2{font:500 27px/1.2 Georgia,serif;letter-spacing:-.3px;margin:0 0 9px}
+    .doc-subtitle{color:var(--muted);font-size:12px;padding-bottom:24px;border-bottom:1px solid var(--line);margin-bottom:25px}
+    .doc-body{font:14px/1.8 Georgia,serif;white-space:pre-wrap;min-height:140px}
+    .doc-body p{margin:0 0 17px}
+    .doc-meta{font:12px/1.7 ui-sans-serif,system-ui,sans-serif;background:#f7f7f2;border-radius:7px;padding:13px 15px;margin:0 0 24px}
+    .doc-meta strong{color:#4f5f50}
+    .signatures{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:60px}
+    .sig-line{border-top:1px solid #9ba096;padding-top:8px;font-size:11px;color:var(--muted)}
+    .sig-line strong{display:block;color:var(--ink);font-size:12px;margin-bottom:2px}
+    .signature-status{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border-radius:20px;background:#f1f1ec;padding:4px 8px;font:10px ui-sans-serif,system-ui,sans-serif;color:#74786e}
+    .status-dot{width:6px;height:6px;border-radius:50%;background:#b2b5ac}
+    .footer-note{text-align:center;margin-top:18px;font-size:10px;color:#a0a39b}
+    .empty{color:#9a9e95;font-style:italic}
+    
+    /* Contracts Table */
+    .contracts-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+    .contracts-table{width:100%;border-collapse:collapse}
+    .contracts-table th,.contracts-table td{padding:14px 18px;text-align:left;border-bottom:1px solid var(--line);font-size:13px}
+    .contracts-table th{background:#fbfaf7;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+    .contracts-table tr:hover{background:#fcfcf9}
+    .badge-pending{background:#fdf5e6;color:#b7791f;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+    .badge-signed{background:#e9f0e9;color:var(--green);padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+    
+    /* Inbox View */
+    .inbox-card{display:grid;grid-template-columns:380px 1fr;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);min-height:720px;overflow:hidden}
+    .inbox-sidebar{border-right:1px solid var(--line);display:flex;flex-direction:column;background:#fcfbf8}
+    .inbox-sidebar-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:#fff}
+    .inbox-messages{overflow-y:auto;flex:1;max-height:680px}
+    .inbox-msg-item{padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer;transition:.15s;background:#fff}
+    .inbox-msg-item:hover{background:#f8f8f4}
+    .inbox-msg-item.active{background:var(--soft);border-left:3px solid var(--green)}
+    .inbox-msg-item.unread .inbox-msg-from{font-weight:700;color:#000}
+    .inbox-msg-from{font-size:13px;font-weight:600;display:flex;justify-content:space-between;margin-bottom:3px}
+    .inbox-msg-subj{font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+    .inbox-msg-date{font-size:11px;color:var(--muted);font-weight:normal}
+    .inbox-viewer{padding:30px 36px;overflow-y:auto;max-height:760px;background:#fff}
+    .inbox-viewer-head{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:20px}
+    .inbox-viewer-subj{font:500 24px Georgia,serif;margin:0 0 10px}
+    .inbox-viewer-meta{font-size:12.5px;color:var(--muted);line-height:1.7}
+    .inbox-viewer-body{font-size:14px;line-height:1.7;color:var(--ink)}
+    
+    .toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,16px);background:#252e27;color:white;padding:10px 16px;border-radius:9px;opacity:0;transition:.2s;pointer-events:none;z-index:9;font-size:12px}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:1000px){.layout{grid-template-columns:minmax(310px,430px) minmax(390px,1fr);gap:20px;padding:24px 20px}.paper{padding:50px 40px}.inbox-card{grid-template-columns:1fr}}
+    @media(max-width:760px){.topbar{padding:0 16px;height:62px}.autosave{display:none}.layout,.layout-full{display:flex;flex-direction:column;padding:23px 14px;gap:22px}.editor-card{padding:19px}.preview-wrap{position:static;width:100%}.paper{min-height:650px;padding:48px 32px}.intro h1{font-size:27px}}
+    @media print{body{background:white}.topbar,.editor-column,.preview-bar,.footer-note,.toast,#viewContracts,#viewInbox{display:none!important}.layout{display:block;padding:0;max-width:none}.preview-wrap{position:static}.paper{box-shadow:none;border:0;border-radius:0;min-height:0;padding:35px 48px}.paper:before{display:none}}
   </style>
 </head>
 <body>
   <div class="login-gate" id="loginGate"><form class="login-card" id="loginForm"><div class="brand"><div class="brandmark">C</div> clause</div><h1>Your private workspace</h1><p>Enter your owner passcode to access your contracts.</p><input id="ownerPassword" type="password" autocomplete="current-password" placeholder="Owner passcode" required><div class="login-error" id="loginError"></div><button class="btn primary" type="submit">Sign in</button></form></div>
+  
+  <!-- Signing Link Share Modal -->
   <div class="login-gate hidden" id="shareModal">
-    <div class="login-card" style="width: min(520px, 100%);">
-      <div class="brand"><div class="brandmark" style="background: var(--green);">✓</div> Agreement Created</div>
-      <h1 style="font-size: 22px; margin-top: 14px;" id="shareTitle">Signing Link Ready</h1>
-      <p id="shareSubtitle" style="color: var(--muted); font-size: 13px; margin-bottom: 16px;">The contract is ready. You can copy this private link to text, DM, or email your client.</p>
+    <div class="login-card" style="width: min(540px, 100%);">
+      <div class="brand"><div class="brandmark" style="background: var(--green);">✓</div> Agreement Ready</div>
+      <h1 style="font-size: 22px; margin-top: 14px;" id="shareTitle">Signing Link Created</h1>
+      <p id="shareSubtitle" style="color: var(--muted); font-size: 13px; margin-bottom: 16px;">The contract is stored. You can share this private link directly with your client.</p>
       <div style="background: #f7f7f2; border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 16px; word-break: break-all; font-family: monospace; font-size: 12px;" id="shareUrlBox"></div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <button class="btn primary" id="copyShareBtn" style="flex: 1;">Copy Signing Link</button>
@@ -31,34 +136,120 @@
       </div>
     </div>
   </div>
-  <header class="topbar"><div class="brand"><div class="brandmark">C</div> clause</div><div class="top-right"><span class="autosave" id="saveState">Saved in this browser</span><button class="btn ghost small" id="logoutBtn">Sign out</button><button class="btn" id="newBtn">New contract</button><button class="btn primary" id="emailBtn">Send for signature ↗</button></div></header>
-  <main class="layout">
+
+  <header class="topbar">
+    <div class="top-left">
+      <div class="brand"><div class="brandmark">C</div> clause</div>
+      <nav class="nav-tabs">
+        <button class="btn small tab-btn active" id="tabEditor">Contract Editor</button>
+        <button class="btn small tab-btn" id="tabContracts">All Contracts <span class="tab-badge" id="contractsBadge">0</span></button>
+        <button class="btn small tab-btn" id="tabInbox">Email Inbox <span class="tab-badge" id="inboxBadge">0</span></button>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="autosave" id="saveState">Saved in this browser</span>
+      <button class="btn ghost small" id="logoutBtn">Sign out</button>
+      <button class="btn" id="newBtn">New contract</button>
+      <button class="btn primary" id="emailBtn">Send for signature ↗</button>
+    </div>
+  </header>
+
+  <!-- VIEW 1: CONTRACT EDITOR -->
+  <main class="layout" id="viewEditor">
     <section class="editor-column">
-      <div class="intro"><div class="eyebrow">Your paperwork, made simple</div><h1>Make an agreement.</h1><p>Fill in the details, review the contract, then send it to your client.</p></div>
+      <div class="intro"><div class="eyebrow">7Layer Studio Agreements</div><h1>Make an agreement.</h1><p>Fill in details, select a template, and send to your client for 1-click electronic signature.</p></div>
       <div class="editor-card">
         <div class="section-head"><h2>People &amp; details</h2><span class="step">01 / DETAILS</span></div>
-        <div class="field"><label for="title">Contract name</label><input id="title" placeholder="e.g. Website design agreement"></div>
+        <div class="field"><label for="title">Contract name</label><input id="title" placeholder="e.g. Social Revenue Share Agreement"></div>
         <div class="pair"><div class="field"><label for="sender">Your name / business</label><input id="sender" placeholder="7Layer Studio"></div><div class="field"><label for="client">Client name</label><input id="client" placeholder="Client name"></div></div>
         <div class="pair"><div class="field"><label for="email">Client email</label><input id="email" type="email" placeholder="client@example.com"></div><div class="field"><label for="senderEmail">Your email</label><input id="senderEmail" type="email" placeholder="contracts@7layer.store"></div></div>
         <div class="field"><label for="date">Effective date</label><input id="date" type="date"></div>
         <div class="divider"></div>
-        <div class="field" id="productField"><label for="productName">Specific product name <span style="font-weight: 400; color: var(--muted);">(used in 50/50 Revenue Share)</span></label><input id="productName" placeholder="e.g. The Natal Crucible: Master Guide & Portal"></div>
-        <div class="section-head"><h2>Agreement terms</h2><select class="template-select" id="template"><option value="custom">Start from scratch</option><option value="revenue_share">50/50 Social Revenue Share (Named Product)</option><option value="services">Service agreement</option><option value="consulting">Consulting agreement</option><option value="nda">Confidentiality agreement</option></select></div>
-        <div class="field"><label for="terms">What have you agreed?</label><textarea id="terms" class="clause" placeholder="Describe the work, payment, timing, and any other terms..."></textarea><p class="hint">Write in plain language. Your terms appear in the contract preview.</p></div>
+        <div class="field" id="productField"><label for="productName">Specific product name <span style="font-weight: 400; color: var(--muted);">(used in 50/50 Revenue Share template)</span></label><input id="productName" placeholder="e.g. The Natal Crucible: Master Guide &amp; Portal"></div>
+        <div class="section-head"><h2>Agreement terms</h2><select class="template-select" id="template"><option value="revenue_share">50/50 Social Revenue Share (Named Product)</option><option value="custom">Start from scratch</option><option value="services">Service agreement</option><option value="consulting">Consulting agreement</option><option value="nda">Confidentiality agreement</option></select></div>
+        <div class="field"><label for="terms">What have you agreed?</label><textarea id="terms" class="clause" placeholder="Describe the work, payment, timing, and any other terms..."></textarea><p class="hint">Terms update dynamically as you type your product name above.</p></div>
         <div class="actions"><button class="btn" id="saveBtn">Save draft</button><button class="btn" id="copyBtn">Copy contract text</button><button class="btn primary" id="printBtn">Download / print</button></div>
-        <div class="captcha-wrap"><p id="securityStatus">Sign in to send a request. Your client can sign through their private link without an account.</p></div>
-        <div class="secure-note"><span>✦</span><span><b>Signing by email:</b> Your client receives a private link to review and sign online. Signed agreements are timestamped and stored with a basic audit record.</span></div>
+        <div class="captcha-wrap"><p id="securityStatus">Sign in to send a request. Your client signs through their private link with zero account required.</p></div>
+        <div class="secure-note"><span>✦</span><span><b>Direct Delivery:</b> Sent via Hostinger SMTP from <b>contracts@7layer.store</b>. Instant copyable link generated automatically.</span></div>
       </div>
     </section>
     <section class="preview-wrap"><div class="preview-bar"><div class="preview-label">Live preview <span>Updates as you type</span></div><div class="preview-actions"><button class="btn small" id="printBtnTop">Print / PDF</button></div></div>
-      <article class="paper" id="paper"><div class="doc-brand" id="docBrand">Agreement</div><h2 id="docTitle">Untitled agreement</h2><div class="doc-subtitle">Prepared <span id="docDate">—</span></div><div class="doc-meta"><div><strong>Between</strong> <span id="docSender">Your name</span> (“Provider”)</div><div><strong>And</strong> <span id="docClient">Client name</span> (“Client”)</div></div><div class="doc-body" id="docTerms"><span class="empty">Your agreement terms will appear here.</span></div><div class="signatures"><div class="sig-line"><strong id="sigSender">Provider</strong>Signature &amp; date</div><div class="sig-line"><strong id="sigClient">Client</strong>Signature &amp; date</div></div><div class="signature-status"><i class="status-dot"></i> Signatures pending</div></article><div class="footer-note">Draft for review · Consider having important agreements reviewed by a qualified professional.</div>
+      <article class="paper" id="paper"><div class="doc-brand" id="docBrand">Agreement</div><h2 id="docTitle">Untitled agreement</h2><div class="doc-subtitle">Prepared <span id="docDate">&mdash;</span></div><div class="doc-meta"><div><strong>Between</strong> <span id="docSender">7Layer Studio</span> (&ldquo;Provider&rdquo;)</div><div><strong>And</strong> <span id="docClient">Client name</span> (&ldquo;Client&rdquo;)</div></div><div class="doc-body" id="docTerms"><span class="empty">Your agreement terms will appear here.</span></div><div class="signatures"><div class="sig-line"><strong id="sigSender">7Layer Studio</strong>Signature &amp; date</div><div class="sig-line"><strong id="sigClient">Client</strong>Signature &amp; date</div></div><div class="signature-status"><i class="status-dot"></i> Signatures pending</div></article><div class="footer-note">7Layer Studio &middot; Confidential Contract Draft</div>
     </section>
   </main>
+
+  <!-- VIEW 2: ALL CONTRACTS LIST -->
+  <main class="layout-full hidden" id="viewContracts">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+      <div>
+        <div class="eyebrow">Database Records</div>
+        <h1 style="font: 500 28px Georgia,serif; margin: 6px 0 4px;">All Contract Requests</h1>
+        <p style="margin: 0; color: var(--muted); font-size: 13px;">Review pending and signed client agreements.</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn small" id="refreshContractsBtn">&#8635; Refresh</button>
+        <button class="btn small primary" id="contractsNewBtn">+ New Contract</button>
+      </div>
+    </div>
+    <div class="contracts-card">
+      <table class="contracts-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Contract Title</th>
+            <th>Client</th>
+            <th>Created</th>
+            <th>Signed At</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="contractsTableBody">
+          <tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--muted);">Loading contracts...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- VIEW 3: INCOMING EMAIL INBOX -->
+  <main class="layout-full hidden" id="viewInbox">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+      <div>
+        <div class="eyebrow">Hostinger Webmail &middot; IMAP</div>
+        <h1 style="font: 500 28px Georgia,serif; margin: 6px 0 4px;">Contracts Inbox</h1>
+        <p style="margin: 0; color: var(--muted); font-size: 13px;">Direct mail stream for <strong style="color: var(--ink);">contracts@7layer.store</strong></p>
+      </div>
+      <div>
+        <button class="btn small primary" id="refreshInboxBtn">&#8635; Check Mail</button>
+      </div>
+    </div>
+    <div class="inbox-card">
+      <div class="inbox-sidebar">
+        <div class="inbox-sidebar-head">
+          <span style="font-weight: 700; font-size: 12px; text-transform: uppercase; color: var(--muted);">Inbox Messages</span>
+          <span id="inboxStatusMsg" style="font-size: 11px; color: var(--muted);"></span>
+        </div>
+        <div class="inbox-messages" id="inboxList">
+          <div style="padding: 30px; text-align: center; color: var(--muted);">Connecting to Hostinger IMAP...</div>
+        </div>
+      </div>
+      <div class="inbox-viewer" id="inboxViewer">
+        <div style="text-align: center; color: var(--muted); padding: 80px 20px;">
+          <div style="font-size: 32px; margin-bottom: 12px;">✉️</div>
+          <p style="margin: 0; font-size: 14px;">Select an email from the left to read client replies or signature notifications.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
   <div class="toast" id="toast"></div>
+
+  <!-- CLIENT-SIDE LOGIC -->
   <script>
     (()=>{
-      const $=id=>document.getElementById(id); const ids=['title','sender','client','email','senderEmail','date','productName','terms']; const storageKey='clause-contract-draft-v1';
-      
+      const $=id=>document.getElementById(id); 
+      const ids=['title','sender','client','email','senderEmail','date','productName','terms']; 
+      const storageKey='clause-contract-draft-v1';
+
       function generateRevenueShare(prodName) {
         const name = (prodName || '').trim() || '[INSERT PRODUCT NAME]';
         return `1. NAMED PRODUCT & APPOINTMENT
@@ -98,14 +289,23 @@ This document records the complete understanding of the parties regarding ${name
         nda:'1. Purpose\nThe parties wish to discuss [business purpose] and may share confidential information for that purpose.\n\n2. Confidential information\nEach party will protect information marked confidential or that reasonably should be understood as confidential, and will use it only for the purpose above.\n\n3. Exclusions\nThese obligations do not apply to information that is public through no breach, already known lawfully, independently developed, or received lawfully from another source.\n\n4. Duration\nThese obligations continue for [number] years from the date of disclosure.\n\n5. Return or deletion\nOn request, each party will return or delete the other party’s confidential information, except copies kept for legal or routine backup purposes.'
       };
 
-      function showToast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2200)}
+      function showToast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2400)}
       function read(){return Object.fromEntries(ids.map(id=>[id,$(id).value]))}
       function save(){localStorage.setItem(storageKey,JSON.stringify(read()));$('saveState').textContent='Saved just now';setTimeout(()=>$('saveState').textContent='Saved in this browser',1800)}
-      function render(){const d=read();$('docTitle').textContent=d.title.trim()||'Untitled agreement';$('docBrand').textContent=d.title.trim()||'Agreement';$('docSender').textContent=d.sender.trim()||'Your name';$('docClient').textContent=d.client.trim()||'Client name';$('sigSender').textContent=d.sender.trim()||'Provider';$('sigClient').textContent=d.client.trim()||'Client';
+      function render(){
+        const d=read();
+        $('docTitle').textContent=d.title.trim()||'Untitled agreement';
+        $('docBrand').textContent=d.title.trim()||'7Layer Studio Agreement';
+        $('docSender').textContent=d.sender.trim()||'7Layer Studio';
+        $('docClient').textContent=d.client.trim()||'Client name';
+        $('sigSender').textContent=d.sender.trim()||'7Layer Studio';
+        $('sigClient').textContent=d.client.trim()||'Client';
         $('docDate').textContent=d.date?new Date(d.date+'T12:00:00').toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'—';
-        const terms=d.terms.trim();$('docTerms').innerHTML=terms?terms.split(/\n\s*\n/).map(p=>'<p>'+escapeHtml(p).replace(/\n/g,'<br>')+'</p>').join(''):'<span class="empty">Your agreement terms will appear here.</span>';
+        const terms=d.terms.trim();
+        $('docTerms').innerHTML=terms?terms.split(/\n\s*\n/).map(p=>'<p>'+escapeHtml(p).replace(/\n/g,'<br>')+'</p>').join(''):'<span class="empty">Your agreement terms will appear here.</span>';
       }
       function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+      
       ids.forEach(id=>$(id).addEventListener('input',()=>{render();clearTimeout(window.saveTimer);window.saveTimer=setTimeout(save,500)}));
 
       $('template').addEventListener('change',e=>{
@@ -133,21 +333,120 @@ This document records the complete understanding of the parties regarding ${name
           render();save();
         }
       });
+
       $('saveBtn').onclick=()=>{save();showToast('Draft saved in this browser')};
       $('printBtn').onclick=$('printBtnTop').onclick=()=>window.print();
-      $('copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(contractText());showToast('Contract text copied')}catch{showToast('Copy is unavailable in this browser')}};
-      function contractText(){const d=read();return `${d.title||'Untitled agreement'}\n\nPrepared ${d.date||'—'}\n\nBetween: ${d.sender||'Provider'}\nAnd: ${d.client||'Client'}\n\n${d.terms||'[Agreement terms]'}\n\nProvider signature: ____________________ Date: __________\nClient signature: _____________________ Date: __________`}
-      $('newBtn').onclick=()=>{if(ids.some(id=>$(id).value.trim())&&!confirm('Start a new contract? The current draft is saved in this browser.'))return;ids.forEach(id=>$(id).value='');$('template').value='custom';$('date').value=new Date().toISOString().slice(0,10);render();save();showToast('New contract ready')};
-      try{const saved=JSON.parse(localStorage.getItem(storageKey)||'null');if(saved)ids.forEach(id=>$(id).value=saved[id]||'')}catch{}
-      if(!$('date').value)$('date').value=new Date().toISOString().slice(0,10);render();
+      $('copyBtn').onclick=async()=>{
+        try{
+          await navigator.clipboard.writeText(contractText());
+          showToast('Contract text copied');
+        }catch{
+          showToast('Copy unavailable in browser');
+        }
+      };
+
+      function contractText(){
+        const d=read();
+        return `${d.title||'Agreement'}\n\nPrepared: ${d.date||'—'}\n\nProvider: ${d.sender||'7Layer Studio'}\nClient: ${d.client||'Client'}\n\n${d.terms||''}\n\nProvider Signature: ____________________ Date: __________\nClient Signature: _____________________ Date: __________`;
+      }
+
+      $('newBtn').onclick=$('contractsNewBtn').onclick=()=>{
+        if(ids.some(id=>$(id).value.trim())&&!confirm('Start a new contract? The current draft is saved in this browser.')) return;
+        ids.forEach(id=>$(id).value='');
+        $('template').value='revenue_share';
+        $('sender').value='7Layer Studio';
+        $('senderEmail').value='contracts@7layer.store';
+        $('date').value=new Date().toISOString().slice(0,10);
+        $('terms').value=generateRevenueShare('');
+        $('title').value='Social Revenue Share Agreement';
+        switchTab('editor');
+        render();save();showToast('New contract ready');
+      };
+
+      // Load initial state
+      try{
+        const saved=JSON.parse(localStorage.getItem(storageKey)||'null');
+        if(saved) ids.forEach(id=>$(id).value=saved[id]||'');
+      }catch{}
+      if(!$('sender').value) $('sender').value='7Layer Studio';
+      if(!$('senderEmail').value) $('senderEmail').value='contracts@7layer.store';
+      if(!$('date').value) $('date').value=new Date().toISOString().slice(0,10);
+      if(!$('terms').value) $('terms').value=generateRevenueShare($('productName').value);
+      if(!$('title').value) $('title').value='Social Revenue Share Agreement';
+      render();
+
+      // ============================================
+      // TAB NAVIGATION & AUTH
+      // ============================================
+      window.switchTab = function(tabName) {
+        $('viewEditor').classList.toggle('hidden', tabName !== 'editor');
+        $('viewContracts').classList.toggle('hidden', tabName !== 'contracts');
+        $('viewInbox').classList.toggle('hidden', tabName !== 'inbox');
+        $('tabEditor').classList.toggle('active', tabName === 'editor');
+        $('tabContracts').classList.toggle('active', tabName === 'contracts');
+        $('tabInbox').classList.toggle('active', tabName === 'inbox');
+        if(tabName === 'contracts') loadContracts();
+        if(tabName === 'inbox') loadInbox();
+      };
+
+      $('tabEditor').onclick = () => switchTab('editor');
+      $('tabContracts').onclick = () => switchTab('contracts');
+      $('tabInbox').onclick = () => switchTab('inbox');
     })();
   </script>
+
+  <!-- SERVER & API LOGIC -->
   <script>
-    (()=>{const get=id=>document.getElementById(id),fields=['title','sender','client','email','senderEmail','date','productName','terms'],readDraft=()=>Object.fromEntries(fields.map(id=>[id,get(id).value])),notify=msg=>{get('toast').textContent=msg;get('toast').classList.add('show');setTimeout(()=>get('toast').classList.remove('show'),2200)},saveDraft=()=>localStorage.setItem('clause-contract-draft-v1',JSON.stringify(readDraft())),gate=get('loginGate');
-      async function checkSession(){try{const r=await fetch('/api/auth',{cache:'no-store'});const d=await r.json();gate.classList.toggle('hidden',d.authenticated===true);if(!d.authenticated)get('ownerPassword').focus()}catch{get('loginError').textContent='Sign-in requires the deployed app and its Vercel settings.'}}
-      get('loginForm').addEventListener('submit',async e=>{e.preventDefault();get('loginError').textContent='';try{const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:get('ownerPassword').value})});const d=await r.json();if(!r.ok)throw Error(d.error||'Unable to sign in');get('ownerPassword').value='';gate.classList.add('hidden')}catch(err){get('loginError').textContent=err.message}});
-      get('logoutBtn').onclick=async()=>{await fetch('/api/auth',{method:'DELETE'});gate.classList.remove('hidden');get('ownerPassword').focus()};checkSession();
-      const send=get('emailBtn');send.textContent='Send for signature ↗';
+    (()=>{
+      const get=id=>document.getElementById(id);
+      const fields=['title','sender','client','email','senderEmail','date','productName','terms'];
+      const readDraft=()=>Object.fromEntries(fields.map(id=>[id,get(id).value]));
+      const notify=msg=>{get('toast').textContent=msg;get('toast').classList.add('show');setTimeout(()=>get('toast').classList.remove('show'),2400)};
+      const gate=get('loginGate');
+
+      async function checkSession(){
+        try{
+          const r=await fetch('/api/auth',{cache:'no-store'});
+          const d=await r.json();
+          gate.classList.toggle('hidden',d.authenticated===true);
+          if(!d.authenticated){
+            get('ownerPassword').focus();
+          } else {
+            // Pre-load counts
+            loadContracts();
+            loadInbox(true);
+          }
+        }catch{
+          get('loginError').textContent='Sign-in requires deployed app and Vercel settings.';
+        }
+      }
+
+      get('loginForm').addEventListener('submit',async e=>{
+        e.preventDefault();
+        get('loginError').textContent='';
+        try{
+          const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:get('ownerPassword').value})});
+          const d=await r.json();
+          if(!r.ok) throw Error(d.error||'Unable to sign in');
+          get('ownerPassword').value='';
+          gate.classList.add('hidden');
+          loadContracts();
+          loadInbox();
+        }catch(err){
+          get('loginError').textContent=err.message;
+        }
+      });
+
+      get('logoutBtn').onclick=async()=>{
+        await fetch('/api/auth',{method:'DELETE'});
+        gate.classList.remove('hidden');
+        get('ownerPassword').focus();
+      };
+
+      checkSession();
+
+      // Send Request Logic
+      const send=get('emailBtn');
       const shareModal=get('shareModal'), shareUrlBox=get('shareUrlBox'), copyShareBtn=get('copyShareBtn'), openShareBtn=get('openShareBtn'), closeShareBtn=get('closeShareBtn'), shareSubtitle=get('shareSubtitle');
       closeShareBtn.onclick=()=>shareModal.classList.add('hidden');
       copyShareBtn.onclick=async()=>{
@@ -155,24 +454,27 @@ This document records the complete understanding of the parties regarding ${name
           await navigator.clipboard.writeText(shareUrlBox.textContent);
           notify('Signing link copied to clipboard!');
         } catch(e) {
-          notify('Please select and copy the link manually.');
+          notify('Please select and copy link manually.');
         }
       };
 
       send.onclick=async()=>{
         const d=readDraft();
         if(!d.email.trim()||!d.senderEmail.trim()||!d.sender.trim()||!d.client.trim()||!d.terms.trim()){
-          notify('Fill in both email addresses, names, and agreement terms first');
+          notify('Fill in client email, name, and terms first.');
           return;
         }
         send.disabled=true;
         send.textContent='Creating…';
         let response;
         try{
-          response=await fetch('/api/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:d.title,provider:d.sender,providerEmail:d.senderEmail,client:d.client,email:d.email,date:d.date,terms:d.terms})});
+          response=await fetch('/api/requests',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({title:d.title,provider:d.sender,providerEmail:d.senderEmail,client:d.client,email:d.email,date:d.date,terms:d.terms})
+          });
           const result=await response.json();
-          if(!response.ok)throw new Error(result.error||'Unable to send signature request.');
-          saveDraft();
+          if(!response.ok) throw new Error(result.error||'Unable to create signature request.');
           
           if(result.signUrl){
             shareUrlBox.textContent = result.signUrl;
@@ -181,22 +483,172 @@ This document records the complete understanding of the parties regarding ${name
               shareSubtitle.innerHTML = '<span style="color:var(--green);font-weight:600;">✓ Email dispatched via Hostinger to '+d.email+'!</span><br>You can also copy the direct signing link below:';
               notify('Dispatched via Hostinger to '+d.email);
             } else {
-              shareSubtitle.innerHTML = 'Agreement created and stored! Copy your private signing link below to send to your client:';
+              shareSubtitle.innerHTML = 'Agreement stored! Copy your private signing link below to send to your client:';
               notify('Signing link generated!');
             }
             shareModal.classList.remove('hidden');
           } else {
             notify(result.message || 'Signature request sent!');
           }
-          get('securityStatus').textContent='Request created. Your client can sign using the link.';
+          loadContracts();
         }catch(error){
           notify(error.message);
-          if(response?.status===401)gate.classList.remove('hidden');
+          if(response?.status===401) gate.classList.remove('hidden');
         }finally{
           send.textContent='Send for signature ↗';
           send.disabled=false;
         }
       };
+
+      // ============================================
+      // CONTRACTS TAB LOGIC
+      // ============================================
+      window.loadContracts = async function() {
+        const tbody = get('contractsTableBody');
+        try {
+          const res = await fetch('/api/requests');
+          const data = await res.json();
+          if(!res.ok) throw new Error(data.error || 'Failed to load');
+          const requests = data.requests || [];
+          get('contractsBadge').textContent = requests.length;
+          
+          if(requests.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--muted);">No contracts created yet. Use the Contract Editor to create your first agreement.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = requests.map(r => {
+            const isSigned = r.status === 'signed';
+            const badge = isSigned 
+              ? `<span class="badge-signed">✓ SIGNED</span>` 
+              : `<span class="badge-pending">⏳ PENDING</span>`;
+            const created = new Date(r.created_at).toLocaleDateString();
+            const signedAt = r.signed_at ? `${new Date(r.signed_at).toLocaleDateString()} by ${escapeHtml(r.signer_name || '')}` : '—';
+            
+            return `
+              <tr>
+                <td>${badge}</td>
+                <td><strong>${escapeHtml(r.title)}</strong></td>
+                <td>${escapeHtml(r.client_name)}<br><small style="color:var(--muted);">${escapeHtml(r.client_email)}</small></td>
+                <td>${created}</td>
+                <td>${signedAt}</td>
+                <td style="text-align: right;">
+                  <button class="btn small" onclick="openContractSign('${r.id}')">View</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color: #9d382e;">${err.message}</td></tr>`;
+        }
+      };
+
+      window.openContractSign = async function(id) {
+        try {
+          const res = await fetch(`/api/requests?id=${id}`);
+          const data = await res.json();
+          if(!res.ok) throw new Error(data.error || 'Failed to load contract');
+          const r = data.request;
+          get('title').value = r.title || '';
+          get('sender').value = r.provider_name || '7Layer Studio';
+          get('client').value = r.client_name || '';
+          get('senderEmail').value = r.provider_email || 'contracts@7layer.store';
+          get('email').value = r.client_email || '';
+          get('date').value = r.effective_date ? r.effective_date.slice(0, 10) : '';
+          get('terms').value = r.terms || '';
+          window.switchTab('editor');
+          notify(`Loaded agreement: ${r.title || ''}`);
+        } catch(err) {
+          notify(err.message);
+        }
+      };
+
+      get('refreshContractsBtn').onclick = () => loadContracts();
+
+      // ============================================
+      // INBOX TAB LOGIC (IMAP)
+      // ============================================
+      window.loadInbox = async function(countOnly = false) {
+        const listEl = get('inboxList');
+        const statusMsg = get('inboxStatusMsg');
+        if(!countOnly) {
+          listEl.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--muted);">Checking Hostinger mail stream...</div>';
+          statusMsg.textContent = 'Connecting…';
+        }
+        try {
+          const res = await fetch('/api/inbox');
+          const data = await res.json();
+          if(!res.ok) throw new Error(data.error || 'Failed to fetch inbox');
+          
+          const messages = data.messages || [];
+          get('inboxBadge').textContent = messages.length;
+          if(countOnly) return;
+
+          statusMsg.textContent = `${messages.length} messages`;
+          if(messages.length === 0) {
+            listEl.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--muted);">Inbox is empty. Sent agreements and client replies will appear here.</div>';
+            return;
+          }
+
+          listEl.innerHTML = messages.map(m => {
+            const dateStr = new Date(m.date).toLocaleDateString(undefined, {month:'short', day:'numeric'});
+            return `
+              <div class="inbox-msg-item ${m.unread ? 'unread' : ''}" onclick="openEmail(${m.uid}, this)">
+                <div class="inbox-msg-from">
+                  <span>${escapeHtml(m.from.split('<')[0].trim() || m.from)}</span>
+                  <span class="inbox-msg-date">${dateStr}</span>
+                </div>
+                <div class="inbox-msg-subj">${escapeHtml(m.subject)}</div>
+              </div>
+            `;
+          }).join('');
+
+          // Select first message automatically if available
+          if(messages.length > 0) {
+            const firstItem = listEl.querySelector('.inbox-msg-item');
+            if(firstItem) firstItem.click();
+          }
+        } catch (err) {
+          if(!countOnly) {
+            listEl.innerHTML = `<div style="padding: 30px; text-align: center; color: #9d382e;">${err.message}</div>`;
+            statusMsg.textContent = 'Error';
+          }
+        }
+      };
+
+      get('refreshInboxBtn').onclick = () => loadInbox();
+
+      window.openEmail = async function(uid, el) {
+        document.querySelectorAll('.inbox-msg-item').forEach(i => i.classList.remove('active'));
+        if(el) el.classList.add('active');
+        const viewer = get('inboxViewer');
+        viewer.innerHTML = '<div style="padding: 60px; text-align: center; color: var(--muted);">Loading message contents…</div>';
+        
+        try {
+          const res = await fetch(`/api/inbox?uid=${uid}`);
+          const data = await res.json();
+          if(!res.ok) throw new Error(data.error || 'Could not load message');
+          const m = data.message;
+          
+          viewer.innerHTML = `
+            <div class="inbox-viewer-head">
+              <h1 class="inbox-viewer-subj">${escapeHtml(m.subject)}</h1>
+              <div class="inbox-viewer-meta">
+                <div><strong>From:</strong> ${escapeHtml(m.from)}</div>
+                <div><strong>To:</strong> ${escapeHtml(m.to)}</div>
+                <div><strong>Date:</strong> ${new Date(m.date).toLocaleString()}</div>
+              </div>
+            </div>
+            <div class="inbox-viewer-body">
+              ${m.html || `<pre style="font-family: inherit; white-space: pre-wrap;">${escapeHtml(m.text)}</pre>`}
+            </div>
+          `;
+        } catch (err) {
+          viewer.innerHTML = `<div style="padding: 40px; text-align: center; color: #9d382e;">${err.message}</div>`;
+        }
+      };
+
+      function escapeHtml(s){return typeof s==='string'?s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])):'';}
     })();
   </script>
 </body>
