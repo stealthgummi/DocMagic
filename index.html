@@ -259,14 +259,16 @@
       const ids=['title','sender','providerSigner','client','email','senderEmail','date','productName','terms']; 
       const storageKey='clause-contract-draft-v1';
 
-      function generateRevenueShare(prodName) {
-        const name = (prodName || '').trim() || '[INSERT PRODUCT NAME]';
+      function generateRevenueShare(prodName, provName, clientName) {
+        const name = (prodName || $('productName')?.value || '').trim() || '[INSERT PRODUCT NAME]';
+        const producer = (provName || $('sender')?.value || '').trim() || '7Layer Studio';
+        const creator = (clientName || $('client')?.value || '').trim() || 'Client';
         return `1. NAMED PRODUCT & APPOINTMENT
 This Agreement applies specifically to the commercial development, launch, and monetization of the following product:
 • Product Name: ${name}
 • Product Scope: Digital guide, interactive web portal, custom software, worksheets, and associated bonus assets (the "Product").
 
-7Layer Studio ("Producer") and Client ("Creator") agree to collaborate on the commercial release and ongoing monetization of ${name} across Creator’s social media channels (including Instagram, TikTok, YouTube, Facebook, and bio links).
+${producer} ("Producer") and ${creator} ("Creator") agree to collaborate on the commercial release and ongoing monetization of ${name} across Creator’s social media channels (including Instagram, TikTok, YouTube, Facebook, and bio links).
 
 2. ROLES & RESPONSIBILITIES
 • Producer Responsibilities: Producer is responsible for technical build, web hosting, payment gateway integration, digital asset delivery, and ongoing technical maintenance of ${name}.
@@ -542,6 +544,7 @@ This document records the complete understanding of the parties regarding ${name
               : `<span class="badge-pending">⏳ PENDING</span>`;
             const created = new Date(r.created_at).toLocaleDateString();
             const signedAt = r.signed_at ? `${new Date(r.signed_at).toLocaleDateString()} by ${escapeHtml(r.signer_name || '')}` : '—';
+            const signUrl = r.signUrl || (r.token ? `/sign.html?token=${encodeURIComponent(r.token)}` : '');
             
             return `
               <tr>
@@ -551,7 +554,9 @@ This document records the complete understanding of the parties regarding ${name
                 <td>${created}</td>
                 <td>${signedAt}</td>
                 <td style="text-align: right; white-space: nowrap;">
-                  <button class="btn small" onclick="openContractSign('${r.id}')" style="margin-right: 6px;">View</button>
+                  ${signUrl ? `<a class="btn small" href="${signUrl}" target="_blank" style="margin-right: 6px; text-decoration: none;">${isSigned ? 'View Signed' : 'Open Link'}</a>` : ''}
+                  ${signUrl ? `<button class="btn small" onclick="copySignLink('${signUrl}')" style="margin-right: 6px;">Copy Link</button>` : ''}
+                  <button class="btn small" onclick="openContractSign('${r.id}')" style="margin-right: 6px;">Load in Editor</button>
                   <button class="btn small" onclick="deleteContract('${r.id}', '${escapeHtml(r.title)}')" style="color: #9d382e; border-color: rgba(157,56,46,0.25);">Delete</button>
                 </td>
               </tr>
@@ -559,6 +564,20 @@ This document records the complete understanding of the parties regarding ${name
           }).join('');
         } catch (err) {
           tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color: #9d382e;">${err.message}</td></tr>`;
+        }
+      };
+
+      window.copySignLink = function(url) {
+        if (!url) return;
+        const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(fullUrl).then(() => {
+            notify('✓ Signing link copied to clipboard!');
+          }).catch(() => {
+            window.prompt('Copy signing link:', fullUrl);
+          });
+        } else {
+          window.prompt('Copy signing link:', fullUrl);
         }
       };
 

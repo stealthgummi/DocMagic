@@ -30,6 +30,7 @@ module.exports = async (req, res) => {
           effective_date date,
           terms text not null,
           token_hash text not null unique,
+          token text,
           status text not null default 'pending' check (status in ('pending', 'signed')),
           created_at timestamptz not null default now(),
           signed_at timestamptz,
@@ -41,27 +42,40 @@ module.exports = async (req, res) => {
           provider_signed_at timestamptz
         );
       `;
+      await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS token text;`;
       await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signer_name text;`;
       await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signed_at timestamptz;`;
 
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const proto = req.headers['x-forwarded-proto'] || 'https';
+      const defaultUrl = host ? `${proto}://${host}` : 'https://doc-magic-zeta.vercel.app';
+      const appUrl = (process.env.APP_URL || process.env.APP_URLD || defaultUrl).replace(/\/$/, '');
+
       if (req.query && req.query.id) {
         const [row] = await sql`
-          SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent, provider_signer_name, provider_signed_at
+          SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent, provider_signer_name, provider_signed_at, token
           FROM contract_requests
           WHERE id = ${req.query.id}
           LIMIT 1
         `;
         if (!row) return json(res, 404, { error: 'Contract request not found.' });
+        if (row.token) {
+          row.signUrl = `${appUrl}/sign.html?token=${encodeURIComponent(row.token)}`;
+        }
         return json(res, 200, { ok: true, request: row });
       }
 
       const rows = await sql`
-        SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, status, created_at, signed_at, signer_name
+        SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, status, created_at, signed_at, signer_name, token
         FROM contract_requests
         ORDER BY created_at DESC
         LIMIT 100
       `;
-      return json(res, 200, { ok: true, requests: rows });
+      const requestsWithUrls = rows.map(r => ({
+        ...r,
+        signUrl: r.token ? `${appUrl}/sign.html?token=${encodeURIComponent(r.token)}` : null
+      }));
+      return json(res, 200, { ok: true, requests: requestsWithUrls });
     } catch (error) {
       console.error('List contract requests failed:', error.message);
       return json(res, 200, { ok: false, requests: [], error: error.message });
@@ -118,8 +132,8 @@ module.exports = async (req, res) => {
     }
 
     const sql = database();
-    await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_name,client_email,effective_date,terms,token_hash,provider_signer_name,provider_signed_at)
-      VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash},${record.providerSigner},now())`;
+    await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_name,client_email,effective_date,terms,token_hash,token,provider_signer_name,provider_signed_at)
+      VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash},${token},${record.providerSigner},now())`;
 
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto = req.headers['x-forwarded-proto'] || 'https';
