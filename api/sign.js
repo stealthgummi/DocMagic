@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
 
       const rows = await sql`
         SELECT id, title, provider_name, provider_signer_name, provider_signed_at, provider_email,
-               client_name, client_email, effective_date, terms, status, created_at, signed_at,
+               client_company, client_name, client_email, effective_date, terms, status, created_at, signed_at,
                signer_name, signer_ip, token
         FROM contract_requests 
         WHERE token_hash=${hashToken(token)} 
@@ -36,6 +36,7 @@ module.exports = async (req, res) => {
         providerSigner: row.provider_signer_name || 'Julia Singerman',
         providerSignedAt: row.provider_signed_at || row.created_at,
         providerEmail: row.provider_email,
+        clientCompany: row.client_company || '',
         client: row.client_name,
         clientEmail: row.client_email,
         date: row.effective_date,
@@ -88,7 +89,7 @@ module.exports = async (req, res) => {
 
     const [agreement] = await sql`
       SELECT id, title, provider_email, client_email, provider_name, provider_signer_name, provider_signed_at,
-             client_name, terms, signed_at, signer_name, signer_ip 
+             client_company, client_name, terms, signed_at, signer_name, signer_ip 
       FROM contract_requests 
       WHERE id=${updated[0].id} 
       LIMIT 1
@@ -98,6 +99,7 @@ module.exports = async (req, res) => {
       const provSigner = agreement.provider_signer_name || 'Julia Singerman';
       const provSignedDate = new Date(agreement.provider_signed_at || agreement.signed_at).toLocaleString();
       const clientSignedDate = new Date(agreement.signed_at).toLocaleString();
+      const clientEntityLabel = agreement.client_company ? `${escapeHtml(agreement.signer_name)} (for ${escapeHtml(agreement.client_company)})` : escapeHtml(agreement.client_name);
 
       let notifyEmail = (agreement.provider_email || '').trim().toLowerCase() || 'contracts@7layer.store';
       if (notifyEmail === 'contract@7layer.store') notifyEmail = 'contracts@7layer.store';
@@ -119,7 +121,7 @@ module.exports = async (req, res) => {
             <div style="background: #fbfaf7; border: 1px solid #e7e8e1; border-radius: 8px; padding: 12px 14px;">
               <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #73796f; margin-bottom: 4px;">Client Acceptance</div>
               <div style="font-size: 16px; font-family: Georgia, serif; font-weight: bold; color: #315d45;">✓ ${escapeHtml(agreement.signer_name)}</div>
-              <div style="font-size: 11px; color: #73796f; margin-top: 2px;">${escapeHtml(agreement.client_name)} · ${clientSignedDate}</div>
+              <div style="font-size: 11px; color: #73796f; margin-top: 2px;">${clientEntityLabel} · ${clientSignedDate}</div>
             </div>
           </div>
 
@@ -132,13 +134,13 @@ module.exports = async (req, res) => {
         </div>
       `;
 
-      const plainText = `Agreement Executed: ${agreement.title}\n\nProvider: ${agreement.provider_name} (Signed by ${provSigner} at ${provSignedDate})\nClient: ${agreement.client_name} (Signed by ${agreement.signer_name} at ${clientSignedDate})\n\nTerms:\n${agreement.terms}\n\nAudit: IP ${agreement.signer_ip || 'Recorded'} at ${clientSignedDate}`;
+      const plainText = `Agreement Executed: ${agreement.title}\n\nProvider: ${agreement.provider_name} (Signed by ${provSigner} at ${provSignedDate})\nClient: ${agreement.client_company ? `${agreement.client_name} for ${agreement.client_company}` : agreement.client_name} (Signed by ${agreement.signer_name} at ${clientSignedDate})\n\nTerms:\n${agreement.terms}\n\nAudit: IP ${agreement.signer_ip || 'Recorded'} at ${clientSignedDate}`;
 
       // Email 1: Send to Provider
       try {
         await sendMail({
           to: notifyEmail,
-          subject: `✓ Executed Agreement: ${agreement.title} (${agreement.client_name})`,
+          subject: `✓ Executed Agreement: ${agreement.title} (${agreement.client_company ? `${agreement.client_company} - ` : ''}${agreement.client_name})`,
           html: executedHtml,
           text: plainText
         });

@@ -590,13 +590,13 @@
             ${isClientSigned
               ? `<div class="sig-name">✓ ${esc(d.signer)}</div>
                  <div class="sig-detail">
-                   <strong>${esc(d.client)}</strong><br>
+                   <strong>${esc(d.clientCompany ? `${d.signer} (for ${d.clientCompany})` : d.client)}</strong><br>
                    Electronic Signature<br>
                    Date: ${clientSignedDate}
                  </div>`
               : `<div class="sig-name pending">⏳ Awaiting ${esc(d.client)}</div>
                  <div class="sig-detail">
-                   <strong>${esc(d.client)}</strong><br>
+                   <strong>${esc(d.clientCompany ? `${d.client} (for ${d.clientCompany})` : d.client)}</strong><br>
                    Awaiting client signature
                  </div>`
             }
@@ -609,12 +609,13 @@
         const clientSigner = d.signer || 'Client Signer';
         const signedAt = d.signedAt ? new Date(d.signedAt).toLocaleString() : new Date().toLocaleString();
         const provDate = d.providerSignedAt ? new Date(d.providerSignedAt).toLocaleString() : signedAt;
+        const clientDesc = d.clientCompany ? `<strong>${esc(clientSigner)}</strong> for ${esc(d.clientCompany)}` : `<strong>${esc(clientSigner)}</strong> for ${esc(d.client)}`;
 
         el('signBox').innerHTML = `
           <div class="message" style="background:#edf7ed;color:#1e4620;border:1px solid #c8e6c9;">
             <strong style="font-size:16px;">✓ Agreement Fully Executed &amp; Legally Binding</strong>
             <p style="margin:6px 0 0 0;font-size:13px;">
-              Both Provider (<strong>${esc(provSigner)}</strong> for ${esc(d.provider)}) and Client (<strong>${esc(clientSigner)}</strong> for ${esc(d.client)}) have completed signatures. An archived electronic record has been permanently logged.
+              Both Provider (<strong>${esc(provSigner)}</strong> for ${esc(d.provider)}) and Client (${clientDesc}) have completed signatures. An archived electronic record has been permanently logged.
             </p>
           </div>
 
@@ -628,7 +629,7 @@
             <div class="audit-item">
               <strong>Client Execution</strong>
               Signer: ${esc(clientSigner)}<br>
-              Entity: ${esc(d.client)}<br>
+              Entity: ${esc(d.clientCompany ? `${d.clientCompany} (${d.client})` : d.client)}<br>
               Recorded: ${signedAt}<br>
               Verification IP: ${esc(d.signerIp || 'Recorded')}
             </div>
@@ -647,11 +648,12 @@
         if (!currentDoc) return;
 
         if (role === 'client') {
-          el('signBoxHeading').textContent = `Sign Agreement as Client (${currentDoc.client})`;
-          el('signBoxHint').textContent = `Please enter the legal name for ${currentDoc.client} to execute this contract.`;
-          el('signerLabel').innerHTML = `Full Legal Name for <strong>${esc(currentDoc.client)}</strong>`;
+          const clientTarget = currentDoc.clientCompany ? `${currentDoc.client} (${currentDoc.clientCompany})` : currentDoc.client;
+          el('signBoxHeading').textContent = `Sign Agreement as Client (${currentDoc.clientCompany || currentDoc.client})`;
+          el('signBoxHint').textContent = `Please enter the legal name for ${currentDoc.client} to execute this contract${currentDoc.clientCompany ? ` on behalf of ${currentDoc.clientCompany}` : ''}.`;
+          el('signerLabel').innerHTML = `Full Legal Name for <strong>${esc(clientTarget)}</strong>`;
           nameInput.placeholder = `e.g. ${currentDoc.client}`;
-          el('signBtnText').textContent = `Sign & Execute as Client (${currentDoc.client})`;
+          el('signBtnText').textContent = `Sign & Execute as Client (${currentDoc.clientCompany || currentDoc.client})`;
         } else {
           el('signBoxHeading').textContent = `Update Provider Signature (${currentDoc.provider})`;
           el('signBoxHint').textContent = `Authorized signer for ${currentDoc.provider}.`;
@@ -690,9 +692,13 @@
           const effDate = d.date ? ' · Effective ' + new Date(d.date + 'T12:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '';
           el('sub').textContent = 'Issued by ' + d.provider + effDate;
 
+          const clientParty = d.clientCompany
+            ? `${esc(d.clientCompany)} (Represented by ${esc(d.client)})`
+            : esc(d.client);
+
           el('meta').innerHTML = `
             <strong>Provider:</strong> ${esc(d.provider)} (Represented by ${esc(d.providerSigner || 'Julia Singerman')})<br>
-            <strong>Client / Recipient:</strong> ${esc(d.client)}<br>
+            <strong>Client / Recipient:</strong> ${clientParty}<br>
             <strong>Effective Date:</strong> ${d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString() : 'Upon mutual signature'}
           `;
 

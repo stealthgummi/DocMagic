@@ -45,6 +45,7 @@ module.exports = async (req, res) => {
       await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS token text;`;
       await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signer_name text;`;
       await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signed_at timestamptz;`;
+      await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS client_company text;`;
 
       const host = req.headers['x-forwarded-host'] || req.headers.host;
       const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -53,7 +54,7 @@ module.exports = async (req, res) => {
 
       if (req.query && req.query.id) {
         const [row] = await sql`
-          SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent, provider_signer_name, provider_signed_at, token
+          SELECT id, title, provider_name, provider_email, client_company, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent, provider_signer_name, provider_signed_at, token
           FROM contract_requests
           WHERE id = ${req.query.id}
           LIMIT 1
@@ -66,7 +67,7 @@ module.exports = async (req, res) => {
       }
 
       const rows = await sql`
-        SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, status, created_at, signed_at, signer_name, token
+        SELECT id, title, provider_name, provider_email, client_company, client_name, client_email, effective_date, status, created_at, signed_at, signer_name, token
         FROM contract_requests
         ORDER BY created_at DESC
         LIMIT 100
@@ -118,6 +119,7 @@ module.exports = async (req, res) => {
       title: clean(data.title, 160) || 'Agreement',
       provider: clean(data.provider, 160) || '7Layer Studio',
       providerSigner: clean(data.providerSigner, 160) || 'Julia Singerman',
+      clientCompany: clean(data.clientCompany, 160),
       client: clean(data.client, 160),
       providerEmail,
       clientEmail,
@@ -132,8 +134,8 @@ module.exports = async (req, res) => {
     }
 
     const sql = database();
-    await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_name,client_email,effective_date,terms,token_hash,token,provider_signer_name,provider_signed_at)
-      VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash},${token},${record.providerSigner},now())`;
+    await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_company,client_name,client_email,effective_date,terms,token_hash,token,provider_signer_name,provider_signed_at)
+      VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.clientCompany},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash},${token},${record.providerSigner},now())`;
 
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -150,17 +152,17 @@ module.exports = async (req, res) => {
         html: `
           <div style="font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #232822; background: #ffffff; border: 1px solid #e7e8e1; border-radius: 12px;">
             <h2 style="margin-top: 0; color: #315d45; font-size: 22px;">Signature Requested: ${escapeHtml(record.title)}</h2>
-            <p>Hello <strong>${escapeHtml(record.client)}</strong>,</p>
+            <p>Hello <strong>${escapeHtml(record.client)}</strong>${record.clientCompany ? ` (${escapeHtml(record.clientCompany)})` : ''},</p>
             <p><strong>${escapeHtml(record.provider)}</strong> has prepared an agreement for you to review and sign online.</p>
             <div style="margin: 28px 0;">
               <a href="${escapeHtml(signUrl)}" style="display: inline-block; padding: 14px 24px; background: #315d45; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">Review and Sign Agreement ➔</a>
             </div>
             <p style="font-size: 13px; color: #73796f;">Or copy and paste this personal signing link into your browser:<br><span style="word-break: break-all; color: #315d45;">${escapeHtml(signUrl)}</span></p>
             <hr style="border: 0; border-top: 1px solid #e7e8e1; margin: 24px 0;">
-            <p style="font-size: 12px; color: #888;">This is a secure personal link intended only for ${escapeHtml(record.client)}. If you have questions about the terms, reply directly to this email or contact ${escapeHtml(record.providerEmail)}.</p>
+            <p style="font-size: 12px; color: #888;">This is a secure personal link intended only for ${escapeHtml(record.client)}${record.clientCompany ? ` of ${escapeHtml(record.clientCompany)}` : ''}. If you have questions about the terms, reply directly to this email or contact ${escapeHtml(record.providerEmail)}.</p>
           </div>
         `,
-        text: `Hello ${record.client},\n\n${record.provider} has sent you "${record.title}" to review and sign.\n\nReview and sign here:\n${signUrl}\n\nIf you have any questions, contact ${record.providerEmail}.`
+        text: `Hello ${record.client}${record.clientCompany ? ` (${record.clientCompany})` : ''},\n\n${record.provider} has sent you "${record.title}" to review and sign.\n\nReview and sign here:\n${signUrl}\n\nIf you have any questions, contact ${record.providerEmail}.`
       });
       emailSent = result.sent;
       if (!result.sent) {

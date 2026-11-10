@@ -4,6 +4,7 @@ create table if not exists public.contract_requests (
   title text not null,
   provider_name text not null,
   provider_email text not null,
+  client_company text,
   client_name text not null,
   client_email text not null,
   effective_date date,
