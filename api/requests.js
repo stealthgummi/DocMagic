@@ -91,13 +91,17 @@ module.exports = async (req, res) => {
   try {
     const data = req.body || {};
     const token = randomToken();
+    let providerEmail = clean(data.providerEmail, 254).toLowerCase() || 'contracts@7layer.store';
+    if (providerEmail === 'contract@7layer.store') providerEmail = 'contracts@7layer.store';
+    let clientEmail = clean(data.email, 254).toLowerCase();
+
     const record = {
       id: randomUUID(),
       title: clean(data.title, 160) || 'Agreement',
-      provider: clean(data.provider, 160),
+      provider: clean(data.provider, 160) || '7Layer Studio',
       client: clean(data.client, 160),
-      providerEmail: clean(data.providerEmail, 254).toLowerCase(),
-      clientEmail: clean(data.email, 254).toLowerCase(),
+      providerEmail,
+      clientEmail,
       date: /^\d{4}-\d{2}-\d{2}$/.test(data.date || '') ? data.date : null,
       terms: clean(data.terms, 20000),
       tokenHash: hashToken(token)

@@ -30,10 +30,12 @@ module.exports = async (req, res) => {
     const [agreement] = await sql`SELECT title,provider_email,client_email,provider_name,client_name,terms,signed_at,signer_name FROM contract_requests WHERE id=${updated[0].id} LIMIT 1`;
     if (agreement) {
       const copy = `Agreement: ${agreement.title}\nProvider: ${agreement.provider_name}\nClient: ${agreement.client_name}\nSigned by: ${agreement.signer_name}\nSigned at: ${agreement.signed_at}\n\nTerms & Clauses:\n${agreement.terms}`;
+      let notifyEmail = (agreement.provider_email || '').trim().toLowerCase() || 'contracts@7layer.store';
+      if (notifyEmail === 'contract@7layer.store') notifyEmail = 'contracts@7layer.store';
       
       try {
         await sendMail({
-          to: agreement.provider_email,
+          to: notifyEmail,
           subject: `Signed: ${agreement.title}`,
           html: `
             <div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #232822; background: #ffffff; border: 1px solid #e7e8e1; border-radius: 12px;">

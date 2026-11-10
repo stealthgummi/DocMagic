@@ -161,8 +161,14 @@
       <div class="editor-card">
         <div class="section-head"><h2>People &amp; details</h2><span class="step">01 / DETAILS</span></div>
         <div class="field"><label for="title">Contract name</label><input id="title" placeholder="e.g. Social Revenue Share Agreement"></div>
-        <div class="pair"><div class="field"><label for="sender">Your name / business</label><input id="sender" placeholder="7Layer Studio"></div><div class="field"><label for="client">Client name</label><input id="client" placeholder="Client name"></div></div>
-        <div class="pair"><div class="field"><label for="email">Client email</label><input id="email" type="email" placeholder="client@example.com"></div><div class="field"><label for="senderEmail">Your email</label><input id="senderEmail" type="email" placeholder="contracts@7layer.store"></div></div>
+        <div class="pair">
+          <div class="field"><label for="sender">Your name / business</label><input id="sender" name="7layer_provider_name" placeholder="7Layer Studio" autocomplete="off"></div>
+          <div class="field"><label for="client">Client name</label><input id="client" name="7layer_client_name" placeholder="Client full name" autocomplete="off"></div>
+        </div>
+        <div class="pair">
+          <div class="field"><label for="senderEmail">Your email (Sender)</label><input id="senderEmail" name="7layer_provider_email" type="email" placeholder="contracts@7layer.store" autocomplete="off"></div>
+          <div class="field"><label for="email">Client email (Recipient)</label><input id="email" name="7layer_client_email" type="email" placeholder="client@example.com" autocomplete="off"></div>
+        </div>
         <div class="field"><label for="date">Effective date</label><input id="date" type="date"></div>
         <div class="divider"></div>
         <div class="field" id="productField"><label for="productName">Specific product name <span style="font-weight: 400; color: var(--muted);">(used in 50/50 Revenue Share template)</span></label><input id="productName" placeholder="e.g. The Natal Crucible: Master Guide &amp; Portal"></div>
@@ -368,8 +374,10 @@ This document records the complete understanding of the parties regarding ${name
         const saved=JSON.parse(localStorage.getItem(storageKey)||'null');
         if(saved) ids.forEach(id=>$(id).value=saved[id]||'');
       }catch{}
-      if(!$('sender').value) $('sender').value='7Layer Studio';
-      if(!$('senderEmail').value) $('senderEmail').value='contracts@7layer.store';
+      if(!$('sender').value || $('sender').value==='Client name') $('sender').value='7Layer Studio';
+      if(!$('senderEmail').value || $('senderEmail').value==='contract@7layer.store' || $('senderEmail').value===$('email').value) {
+        $('senderEmail').value='contracts@7layer.store';
+      }
       if(!$('date').value) $('date').value=new Date().toISOString().slice(0,10);
       if(!$('terms').value) $('terms').value=generateRevenueShare($('productName').value);
       if(!$('title').value) $('title').value='Social Revenue Share Agreement';
