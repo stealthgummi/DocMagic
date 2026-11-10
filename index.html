@@ -18,6 +18,19 @@
 </head>
 <body>
   <div class="login-gate" id="loginGate"><form class="login-card" id="loginForm"><div class="brand"><div class="brandmark">C</div> clause</div><h1>Your private workspace</h1><p>Enter your owner passcode to access your contracts.</p><input id="ownerPassword" type="password" autocomplete="current-password" placeholder="Owner passcode" required><div class="login-error" id="loginError"></div><button class="btn primary" type="submit">Sign in</button></form></div>
+  <div class="login-gate hidden" id="shareModal">
+    <div class="login-card" style="width: min(520px, 100%);">
+      <div class="brand"><div class="brandmark" style="background: var(--green);">✓</div> Agreement Created</div>
+      <h1 style="font-size: 22px; margin-top: 14px;" id="shareTitle">Signing Link Ready</h1>
+      <p id="shareSubtitle" style="color: var(--muted); font-size: 13px; margin-bottom: 16px;">The contract is ready. You can copy this private link to text, DM, or email your client.</p>
+      <div style="background: #f7f7f2; border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 16px; word-break: break-all; font-family: monospace; font-size: 12px;" id="shareUrlBox"></div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn primary" id="copyShareBtn" style="flex: 1;">Copy Signing Link</button>
+        <a class="btn" id="openShareBtn" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center;">Open Page ↗</a>
+        <button class="btn" id="closeShareBtn">Done</button>
+      </div>
+    </div>
+  </div>
   <header class="topbar"><div class="brand"><div class="brandmark">C</div> clause</div><div class="top-right"><span class="autosave" id="saveState">Saved in this browser</span><button class="btn ghost small" id="logoutBtn">Sign out</button><button class="btn" id="newBtn">New contract</button><button class="btn primary" id="emailBtn">Send for signature ↗</button></div></header>
   <main class="layout">
     <section class="editor-column">
@@ -70,9 +83,54 @@
       get('loginForm').addEventListener('submit',async e=>{e.preventDefault();get('loginError').textContent='';try{const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:get('ownerPassword').value})});const d=await r.json();if(!r.ok)throw Error(d.error||'Unable to sign in');get('ownerPassword').value='';gate.classList.add('hidden')}catch(err){get('loginError').textContent=err.message}});
       get('logoutBtn').onclick=async()=>{await fetch('/api/auth',{method:'DELETE'});gate.classList.remove('hidden');get('ownerPassword').focus()};checkSession();
       const send=get('emailBtn');send.textContent='Send for signature ↗';
-      send.onclick=async()=>{const d=readDraft();if(!d.email.trim()||!d.senderEmail.trim()||!d.sender.trim()||!d.client.trim()||!d.terms.trim()){notify('Fill in both email addresses, names, and agreement terms first');return}send.disabled=true;send.textContent='Sending…';
-        let response;try{response=await fetch('/api/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:d.title,provider:d.sender,providerEmail:d.senderEmail,client:d.client,email:d.email,date:d.date,terms:d.terms})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Unable to send signature request.');saveDraft();notify('Signature request sent to '+d.email);get('securityStatus').textContent='Request sent. Your client can sign using the link in their email.';
-        }catch(error){notify(error.message);if(response?.status===401)gate.classList.remove('hidden')}finally{send.textContent='Send for signature ↗';send.disabled=false}
+      const shareModal=get('shareModal'), shareUrlBox=get('shareUrlBox'), copyShareBtn=get('copyShareBtn'), openShareBtn=get('openShareBtn'), closeShareBtn=get('closeShareBtn'), shareSubtitle=get('shareSubtitle');
+      closeShareBtn.onclick=()=>shareModal.classList.add('hidden');
+      copyShareBtn.onclick=async()=>{
+        try {
+          await navigator.clipboard.writeText(shareUrlBox.textContent);
+          notify('Signing link copied to clipboard!');
+        } catch(e) {
+          notify('Please select and copy the link manually.');
+        }
+      };
+
+      send.onclick=async()=>{
+        const d=readDraft();
+        if(!d.email.trim()||!d.senderEmail.trim()||!d.sender.trim()||!d.client.trim()||!d.terms.trim()){
+          notify('Fill in both email addresses, names, and agreement terms first');
+          return;
+        }
+        send.disabled=true;
+        send.textContent='Creating…';
+        let response;
+        try{
+          response=await fetch('/api/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:d.title,provider:d.sender,providerEmail:d.senderEmail,client:d.client,email:d.email,date:d.date,terms:d.terms})});
+          const result=await response.json();
+          if(!response.ok)throw new Error(result.error||'Unable to send signature request.');
+          saveDraft();
+          
+          if(result.signUrl){
+            shareUrlBox.textContent = result.signUrl;
+            openShareBtn.href = result.signUrl;
+            if(result.emailSent){
+              shareSubtitle.innerHTML = '<span style="color:var(--green);font-weight:600;">✓ Email dispatched via Hostinger to '+d.email+'!</span><br>You can also copy the direct signing link below:';
+              notify('Dispatched via Hostinger to '+d.email);
+            } else {
+              shareSubtitle.innerHTML = 'Agreement created and stored! Copy your private signing link below to send to your client:';
+              notify('Signing link generated!');
+            }
+            shareModal.classList.remove('hidden');
+          } else {
+            notify(result.message || 'Signature request sent!');
+          }
+          get('securityStatus').textContent='Request created. Your client can sign using the link.';
+        }catch(error){
+          notify(error.message);
+          if(response?.status===401)gate.classList.remove('hidden');
+        }finally{
+          send.textContent='Send for signature ↗';
+          send.disabled=false;
+        }
       };
     })();
   </script>

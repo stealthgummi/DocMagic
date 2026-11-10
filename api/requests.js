@@ -1,6 +1,7 @@
 const { randomUUID } = require('node:crypto');
 const { json, env, hashToken, verifySession, randomToken } = require('../lib/api');
 const database = require('../lib/db');
+const { sendMail } = require('../lib/mailer');
 
 function clean(value, max) { return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : ''; }
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
@@ -13,32 +14,67 @@ module.exports = async (req, res) => {
     const data = req.body || {};
     const token = randomToken();
     const record = {
-      id: randomUUID(), title: clean(data.title, 160) || 'Agreement',
-      provider: clean(data.provider, 160), client: clean(data.client, 160),
-      providerEmail: clean(data.providerEmail, 254).toLowerCase(), clientEmail: clean(data.email, 254).toLowerCase(),
+      id: randomUUID(),
+      title: clean(data.title, 160) || 'Agreement',
+      provider: clean(data.provider, 160),
+      client: clean(data.client, 160),
+      providerEmail: clean(data.providerEmail, 254).toLowerCase(),
+      clientEmail: clean(data.email, 254).toLowerCase(),
       date: /^\d{4}-\d{2}-\d{2}$/.test(data.date || '') ? data.date : null,
-      terms: clean(data.terms, 20000), tokenHash: hashToken(token)
+      terms: clean(data.terms, 20000),
+      tokenHash: hashToken(token)
     };
+
     const validEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!record.provider || !record.client || !record.terms || !validEmail(record.clientEmail) || !validEmail(record.providerEmail)) return json(res, 400, { error: 'Add both names, valid email addresses, and the agreement terms.' });
-    if (!process.env.RESEND_API_KEY || !process.env.FROM_EMAIL) return json(res, 503, { error: 'Email is not configured yet. Add RESEND_API_KEY and FROM_EMAIL in Vercel settings.' });
+    if (!record.provider || !record.client || !record.terms || !validEmail(record.clientEmail) || !validEmail(record.providerEmail)) {
+      return json(res, 400, { error: 'Add both names, valid email addresses, and the agreement terms.' });
+    }
+
     const sql = database();
     await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_name,client_email,effective_date,terms,token_hash)
       VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash})`;
-    const signUrl = `${process.env.APP_URL.replace(/\/$/, '')}/sign.html?token=${encodeURIComponent(token)}`;
-    const mail = await fetch('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: process.env.FROM_EMAIL, to: [record.clientEmail], subject: `Signature requested: ${record.title}`,
-        html: `<p>Hello ${escapeHtml(record.client)},</p><p>${escapeHtml(record.provider)} has sent you an agreement to review and sign.</p><p><a href="${escapeHtml(signUrl)}" style="display:inline-block;padding:12px 18px;background:#315d45;color:white;text-decoration:none;border-radius:7px">Review and sign agreement</a></p><p>This personal signing link should not be forwarded. If you have questions, reply directly to the sender.</p><p><small>${escapeHtml(record.title)}</small></p>`,
-        text: `Hello ${record.client},\n\n${record.provider} has sent you “${record.title}” to review and sign.\n\nReview and sign: ${signUrl}\n\nThis personal signing link should not be forwarded.` })
-    });
-    if (!mail.ok) {
-      await sql`DELETE FROM contract_requests WHERE id=${record.id}`;
-      throw new Error('The contract was not sent. Check your Resend sender and API key.');
+
+    const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
+    const signUrl = `${appUrl}/sign.html?token=${encodeURIComponent(token)}`;
+
+    let emailSent = false;
+    try {
+      const result = await sendMail({
+        to: record.clientEmail,
+        subject: `Signature requested: ${record.title}`,
+        html: `
+          <div style="font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #232822; background: #ffffff; border: 1px solid #e7e8e1; border-radius: 12px;">
+            <h2 style="margin-top: 0; color: #315d45; font-size: 22px;">Signature Requested: ${escapeHtml(record.title)}</h2>
+            <p>Hello <strong>${escapeHtml(record.client)}</strong>,</p>
+            <p><strong>${escapeHtml(record.provider)}</strong> has prepared an agreement for you to review and sign online.</p>
+            <div style="margin: 28px 0;">
+              <a href="${escapeHtml(signUrl)}" style="display: inline-block; padding: 14px 24px; background: #315d45; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">Review and Sign Agreement ➔</a>
+            </div>
+            <p style="font-size: 13px; color: #73796f;">Or copy and paste this personal signing link into your browser:<br><span style="word-break: break-all; color: #315d45;">${escapeHtml(signUrl)}</span></p>
+            <hr style="border: 0; border-top: 1px solid #e7e8e1; margin: 24px 0;">
+            <p style="font-size: 12px; color: #888;">This is a secure personal link intended only for ${escapeHtml(record.client)}. If you have questions about the terms, reply directly to this email or contact ${escapeHtml(record.providerEmail)}.</p>
+          </div>
+        `,
+        text: `Hello ${record.client},\n\n${record.provider} has sent you "${record.title}" to review and sign.\n\nReview and sign here:\n${signUrl}\n\nIf you have any questions, contact ${record.providerEmail}.`
+      });
+      emailSent = result.sent;
+    } catch (mailErr) {
+      console.error('SMTP send error:', mailErr.message);
     }
-    return json(res, 201, { ok: true, message: 'Signature request sent.' });
+
+    return json(res, 201, {
+      ok: true,
+      emailSent,
+      signUrl,
+      id: record.id,
+      message: emailSent
+        ? `Signature request emailed to ${record.clientEmail} via Hostinger!`
+        : 'Agreement created! Copy the signing link below.'
+    });
   } catch (error) {
     console.error('Create signature request failed:', error.message);
-    return json(res, error.message.startsWith('Missing server configuration') ? 503 : 500, { error: error.message || 'Could not send the request.' });
+    return json(res, error.message.startsWith('Missing server configuration') ? 503 : 500, {
+      error: error.message || 'Could not send the request.'
+    });
   }
 };

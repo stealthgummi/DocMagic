@@ -6,14 +6,17 @@ A small, Vercel deployable app for one owner to draft agreements and send a priv
 
 1. Put this folder in a GitHub repository and import it into Vercel.
 2. In the Vercel project’s **Storage** tab, add the **Neon** Marketplace integration. Vercel connects the database and adds `DATABASE_URL` to the project environment. Open the Neon SQL Editor from the integration and run [`schema.sql`](schema.sql).
-3. Create a Resend account and verify a sending domain.
-4. Add these project environment variables in Vercel, then redeploy:
+3. Configure your Hostinger SMTP (No third-party SaaS accounts or Resend API keys required).
+4. Add these project environment variables in Vercel:
 
-   - `APP_URL` — the public URL, e.g. `https://your-project.vercel.app` (no trailing slash)
-   - `OWNER_PASSWORD` — a long, unique passphrase for your private contract workspace
-   - `SESSION_SECRET` — a random secret of at least 32 characters for signing the owner’s eight-hour session cookie
-   - `RESEND_API_KEY` — Resend API key
-   - `FROM_EMAIL` — verified sender, e.g. `Agreements <agreements@yourdomain.com>`
+   - `APP_URL` — your public deployment URL, e.g. `https://your-project.vercel.app` (no trailing slash)
+   - `OWNER_PASSWORD` — your private passcode for accessing the contract dashboard
+   - `SESSION_SECRET` — a random secret phrase of at least 32 characters for dashboard session cookies
+   - `SMTP_HOST` — `smtp.hostinger.com`
+   - `SMTP_PORT` — `465`
+   - `SMTP_USER` — your Hostinger email (e.g. `try@leadsmagnet.pro`)
+   - `SMTP_PASS` — your Hostinger email password
+   - `FROM_NAME` — sender display name (e.g. `DocMagic Agreements`)
 
    [`.env.example`](.env.example) lists the environment variables. The Neon integration supplies `DATABASE_URL`; do not paste it into browser code.
 
