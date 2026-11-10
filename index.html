@@ -483,7 +483,8 @@ This document records the complete understanding of the parties regarding ${name
               shareSubtitle.innerHTML = '<span style="color:var(--green);font-weight:600;">✓ Email dispatched via Hostinger to '+d.email+'!</span><br>You can also copy the direct signing link below:';
               notify('Dispatched via Hostinger to '+d.email);
             } else {
-              shareSubtitle.innerHTML = 'Agreement stored! Copy your private signing link below to send to your client:';
+              const notice = result.emailError ? `<div style="margin: 8px 0; padding: 8px 12px; background: #fffbeb; color: #b45309; border-radius: 6px; font-size: 13px; text-align: left;">⚠️ <strong>Hostinger SMTP Notice:</strong> ${escapeHtml(result.emailError)}</div>` : '';
+              shareSubtitle.innerHTML = 'Agreement stored! ' + notice + 'Copy your private signing link below to send directly to your client:';
               notify('Signing link generated!');
             }
             shareModal.classList.remove('hidden');
@@ -536,8 +537,9 @@ This document records the complete understanding of the parties regarding ${name
                 <td>${escapeHtml(r.client_name)}<br><small style="color:var(--muted);">${escapeHtml(r.client_email)}</small></td>
                 <td>${created}</td>
                 <td>${signedAt}</td>
-                <td style="text-align: right;">
-                  <button class="btn small" onclick="openContractSign('${r.id}')">View</button>
+                <td style="text-align: right; white-space: nowrap;">
+                  <button class="btn small" onclick="openContractSign('${r.id}')" style="margin-right: 6px;">View</button>
+                  <button class="btn small" onclick="deleteContract('${r.id}', '${escapeHtml(r.title)}')" style="color: #9d382e; border-color: rgba(157,56,46,0.25);">Delete</button>
                 </td>
               </tr>
             `;
@@ -564,6 +566,19 @@ This document records the complete understanding of the parties regarding ${name
           notify(`Loaded agreement: ${r.title || ''}`);
         } catch(err) {
           notify(err.message);
+        }
+      };
+
+      window.deleteContract = async function(id, title) {
+        if (!confirm(`Are you sure you want to permanently delete "${title}"?`)) return;
+        try {
+          const res = await fetch(`/api/requests?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to delete contract');
+          notify(`Deleted: ${title}`);
+          loadContracts();
+        } catch (err) {
+          notify(`Error: ${err.message}`);
         }
       };
 

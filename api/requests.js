@@ -64,6 +64,22 @@ module.exports = async (req, res) => {
     }
   }
 
+  // DELETE: Delete a contract request
+  if (req.method === 'DELETE') {
+    if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again.' });
+    if (!dbUrl) return json(res, 503, { error: 'Database is not connected.' });
+    const id = req.query?.id || req.body?.id;
+    if (!id) return json(res, 400, { error: 'Contract ID is required.' });
+    try {
+      const sql = database();
+      await sql`DELETE FROM contract_requests WHERE id = ${id}`;
+      return json(res, 200, { ok: true, message: 'Contract deleted.' });
+    } catch (err) {
+      console.error('Delete contract failed:', err.message);
+      return json(res, 500, { error: err.message || 'Could not delete contract.' });
+    }
+  }
+
   // POST: Create a new contract signature request
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
   if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again before sending a request.' });
@@ -103,6 +119,7 @@ module.exports = async (req, res) => {
     const signUrl = `${appUrl}/sign.html?token=${encodeURIComponent(token)}`;
 
     let emailSent = false;
+    let emailError = null;
     try {
       const result = await sendMail({
         to: record.clientEmail,
@@ -123,13 +140,18 @@ module.exports = async (req, res) => {
         text: `Hello ${record.client},\n\n${record.provider} has sent you "${record.title}" to review and sign.\n\nReview and sign here:\n${signUrl}\n\nIf you have any questions, contact ${record.providerEmail}.`
       });
       emailSent = result.sent;
+      if (!result.sent) {
+        emailError = result.error;
+      }
     } catch (mailErr) {
       console.error('SMTP send error:', mailErr.message);
+      emailError = mailErr.message;
     }
 
     return json(res, 201, {
       ok: true,
       emailSent,
+      emailError,
       signUrl,
       id: record.id,
       message: emailSent
