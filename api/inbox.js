@@ -6,13 +6,18 @@ function escapeHtml(s) {
   return typeof s === 'string' ? s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])) : '';
 }
 
+function sanitize(val) {
+  if (typeof val !== 'string') return '';
+  return val.trim().replace(/^["']|["']$/g, '');
+}
+
 function getImapConfig() {
-  const host = process.env.IMAP_HOST || 'imap.hostinger.com';
-  const port = parseInt(process.env.IMAP_PORT || '993', 10);
+  const host = sanitize(process.env.IMAP_HOST) || 'imap.hostinger.com';
+  const port = parseInt(sanitize(process.env.IMAP_PORT) || '993', 10);
   const secure = process.env.IMAP_SECURE !== 'false';
   const auth = {
-    user: process.env.IMAP_USER || process.env.SMTP_USER || 'contracts@7layer.store',
-    pass: process.env.IMAP_PASS || process.env.SMTP_PASS || ''
+    user: sanitize(process.env.IMAP_USER) || sanitize(process.env.SMTP_USER) || 'contracts@7layer.store',
+    pass: sanitize(process.env.IMAP_PASS) || sanitize(process.env.SMTP_PASS) || ''
   };
 
   if (!auth.user || !auth.pass) {
