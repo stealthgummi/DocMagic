@@ -28,12 +28,17 @@ module.exports = async (req, res) => {
 
   const imapConfig = getImapConfig();
   if (!imapConfig) {
-    return json(res, 503, { error: 'Email inbox is not configured yet. Add SMTP_USER and SMTP_PASS in settings.' });
+    return json(res, 200, {
+      ok: false,
+      messages: [],
+      error: 'Email inbox is not configured yet. Add SMTP_USER and SMTP_PASS in Vercel settings.'
+    });
   }
 
   const client = new ImapFlow(imapConfig);
 
   try {
+    // Attempt connection with timeout
     await client.connect();
     const lock = await client.getMailboxLock('INBOX');
 
@@ -104,8 +109,13 @@ module.exports = async (req, res) => {
       lock.release();
     }
   } catch (err) {
-    console.error('IMAP inbox error:', err.message);
-    return json(res, 500, { error: `Failed to load inbox: ${err.message}` });
+    console.warn('IMAP connection warning:', err.message);
+    return json(res, 200, {
+      ok: false,
+      messages: [],
+      account: imapConfig.auth.user,
+      error: `Could not connect to ${imapConfig.auth.user}: ${err.message}. Please verify the mailbox exists in Hostinger and uses this password.`
+    });
   } finally {
     try { await client.logout(); } catch (_) {}
   }

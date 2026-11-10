@@ -1,5 +1,5 @@
 const { randomUUID } = require('node:crypto');
-const { json, env, hashToken, verifySession, randomToken } = require('../lib/api');
+const { json, hashToken, verifySession, randomToken } = require('../lib/api');
 const database = require('../lib/db');
 const { sendMail } = require('../lib/mailer');
 
@@ -7,11 +7,37 @@ function clean(value, max) { return typeof value === 'string' ? value.replace(/[
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
 
 module.exports = async (req, res) => {
+  // GET: List contracts or get specific contract
   if (req.method === 'GET') {
     if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again.' });
+    if (!process.env.DATABASE_URL) {
+      return json(res, 200, { ok: false, requests: [], error: 'DATABASE_URL is not configured yet. Connect Neon in your Vercel Storage settings.' });
+    }
+
     try {
-      env();
       const sql = database();
+      // Ensure the table exists automatically
+      await sql`
+        CREATE TABLE IF NOT EXISTS contract_requests (
+          id text primary key,
+          title text not null,
+          provider_name text not null,
+          provider_email text not null,
+          client_name text not null,
+          client_email text not null,
+          effective_date date,
+          terms text not null,
+          token_hash text not null unique,
+          status text not null default 'pending' check (status in ('pending', 'signed')),
+          created_at timestamptz not null default now(),
+          signed_at timestamptz,
+          signer_name text,
+          signer_ip text,
+          signer_user_agent text,
+          signer_consent boolean not null default false
+        );
+      `;
+
       if (req.query && req.query.id) {
         const [row] = await sql`
           SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent
@@ -32,14 +58,19 @@ module.exports = async (req, res) => {
       return json(res, 200, { ok: true, requests: rows });
     } catch (error) {
       console.error('List contract requests failed:', error.message);
-      return json(res, 500, { error: 'Could not load contract requests.' });
+      return json(res, 200, { ok: false, requests: [], error: error.message });
     }
   }
 
+  // POST: Create a new contract signature request
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
   if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again before sending a request.' });
+  
+  if (!process.env.DATABASE_URL) {
+    return json(res, 503, { error: 'Database is not connected. Add DATABASE_URL in Vercel settings.' });
+  }
+
   try {
-    env();
     const data = req.body || {};
     const token = randomToken();
     const record = {
@@ -102,8 +133,6 @@ module.exports = async (req, res) => {
     });
   } catch (error) {
     console.error('Create signature request failed:', error.message);
-    return json(res, error.message.startsWith('Missing server configuration') ? 503 : 500, {
-      error: error.message || 'Could not send the request.'
-    });
+    return json(res, 500, { error: error.message || 'Could not send the request.' });
   }
 };

@@ -509,6 +509,10 @@ This document records the complete understanding of the parties regarding ${name
           const res = await fetch('/api/requests');
           const data = await res.json();
           if(!res.ok) throw new Error(data.error || 'Failed to load');
+          if (data.error) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 30px; color: #b45309; background: #fffbeb; border-radius: 8px;">⚠️ <strong>Setup Notice:</strong> ${escapeHtml(data.error)}</td></tr>`;
+            return;
+          }
           const requests = data.requests || [];
           get('contractsBadge').textContent = requests.length;
           
@@ -580,6 +584,14 @@ This document records the complete understanding of the parties regarding ${name
           const data = await res.json();
           if(!res.ok) throw new Error(data.error || 'Failed to fetch inbox');
           
+          if(data.error) {
+            if(!countOnly) {
+              listEl.innerHTML = `<div style="padding: 24px 16px; text-align: center; color: #b45309; background: #fffbeb; border-radius: 8px; margin: 12px; font-size: 13px;">⚠️ <strong>Mailbox Notice:</strong><br>${escapeHtml(data.error)}</div>`;
+              statusMsg.textContent = 'Setup notice';
+            }
+            return;
+          }
+
           const messages = data.messages || [];
           get('inboxBadge').textContent = messages.length;
           if(countOnly) return;
