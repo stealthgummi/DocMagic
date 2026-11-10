@@ -7,11 +7,13 @@ function clean(value, max) { return typeof value === 'string' ? value.replace(/[
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
 
 module.exports = async (req, res) => {
+  const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+
   // GET: List contracts or get specific contract
   if (req.method === 'GET') {
     if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again.' });
-    if (!process.env.DATABASE_URL) {
-      return json(res, 200, { ok: false, requests: [], error: 'DATABASE_URL is not configured yet. Connect Neon in your Vercel Storage settings.' });
+    if (!dbUrl) {
+      return json(res, 200, { ok: false, requests: [], error: 'Database is not connected yet. Connect Neon in your Vercel Storage settings.' });
     }
 
     try {
@@ -66,8 +68,8 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
   if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again before sending a request.' });
   
-  if (!process.env.DATABASE_URL) {
-    return json(res, 503, { error: 'Database is not connected. Add DATABASE_URL in Vercel settings.' });
+  if (!dbUrl) {
+    return json(res, 503, { error: 'Database is not connected. Connect Neon or add POSTGRES_URL in Vercel settings.' });
   }
 
   try {
