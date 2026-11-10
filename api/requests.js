@@ -96,7 +96,10 @@ module.exports = async (req, res) => {
     await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_name,client_email,effective_date,terms,token_hash)
       VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash})`;
 
-    const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const proto = req.headers['x-forwarded-proto'] || 'https';
+    const defaultUrl = host ? `${proto}://${host}` : 'https://doc-magic-zeta.vercel.app';
+    const appUrl = (process.env.APP_URL || process.env.APP_URLD || defaultUrl).replace(/\/$/, '');
     const signUrl = `${appUrl}/sign.html?token=${encodeURIComponent(token)}`;
 
     let emailSent = false;
