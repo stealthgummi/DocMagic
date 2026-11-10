@@ -12,11 +12,11 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const token = typeof req.query.token === 'string' ? req.query.token : '';
       if (token.length < 30) return json(res, 400, { error: 'This signing link is not valid.' });
-      const rows = await sql`SELECT id,title,provider_name,client_name,effective_date,terms,status,signed_at,signer_name
+      const rows = await sql`SELECT id,title,provider_name,client_name,effective_date,terms,status,created_at,signed_at,signer_name
         FROM contract_requests WHERE token_hash=${hashToken(token)} LIMIT 1`;
       if (!rows.length) return json(res, 404, { error: 'This signing link is invalid or has expired.' });
       const row = rows[0];
-      return json(res, 200, { id: row.id, title: row.title, provider: row.provider_name, client: row.client_name, date: row.effective_date, terms: row.terms, status: row.status, signedAt: row.signed_at, signer: row.signer_name });
+      return json(res, 200, { id: row.id, title: row.title, provider: row.provider_name, client: row.client_name, date: row.effective_date, terms: row.terms, status: row.status, createdAt: row.created_at, signedAt: row.signed_at, signer: row.signer_name });
     }
     const { token, signer, consent } = req.body || {};
     const signerName = typeof signer === 'string' ? signer.trim().slice(0, 160) : '';
