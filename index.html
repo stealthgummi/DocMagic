@@ -124,18 +124,14 @@
   
   <!-- Signing Link Share Modal -->
   <div class="login-gate hidden" id="shareModal">
-    <div class="login-card" style="width: min(560px, 100%);">
-      <div class="brand"><div class="brandmark" style="background: var(--green);">✓</div> Agreement Dispatched</div>
-      <h1 style="font-size: 22px; margin-top: 14px;" id="shareTitle">Sent to Client for Signature</h1>
-      <div style="background: #edf7ed; border: 1px solid #c8e6c9; border-radius: 8px; padding: 12px 14px; margin: 12px 0; font-size: 13px; color: #1e4620;">
-        <strong>✓ Your Provider Signature Is Recorded:</strong> You have authorized this contract. The link below is exclusively for your <strong>Client</strong> to review and sign.
-      </div>
-      <p id="shareSubtitle" style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">Email invitation has been dispatched. You can also copy the private client signing link below:</p>
-      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Client's Private Signing Link:</div>
+    <div class="login-card" style="width: min(540px, 100%);">
+      <div class="brand"><div class="brandmark" style="background: var(--green);">✓</div> Agreement Ready</div>
+      <h1 style="font-size: 22px; margin-top: 14px;" id="shareTitle">Signing Link Created</h1>
+      <p id="shareSubtitle" style="color: var(--muted); font-size: 13px; margin-bottom: 16px;">The contract is stored. You can share this private link directly with your client.</p>
       <div style="background: #f7f7f2; border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 16px; word-break: break-all; font-family: monospace; font-size: 12px;" id="shareUrlBox"></div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button class="btn primary" id="copyShareBtn" style="flex: 1;">Copy Client Signing Link</button>
-        <a class="btn" id="openShareBtn" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center;">Preview Client View ↗</a>
+        <button class="btn primary" id="copyShareBtn" style="flex: 1;">Copy Signing Link</button>
+        <a class="btn" id="openShareBtn" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center;">Open Page ↗</a>
         <button class="btn" id="closeShareBtn">Done</button>
       </div>
     </div>

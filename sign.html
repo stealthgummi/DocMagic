@@ -498,15 +498,13 @@
         <section class="sign-section" id="signBox">
           <div id="notice"></div>
 
-          <div class="creator-preview-banner" id="creatorPreviewBanner" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 16px; margin-bottom: 22px; font-size: 13px; color: #92400e; display: flex; gap: 12px; align-items: flex-start;">
-            <span style="font-size: 20px; line-height: 1;">💡</span>
-            <div>
-              <strong style="color: #78350f;">Agreement Issuer / Provider Notice:</strong> Your signature has already been officially recorded and attached above (<span id="bannerProvName" style="font-weight: 600;">Julia Singerman</span>).
-              <div style="margin-top: 4px; color: #b45309; line-height: 1.5;">The signature box below is reserved exclusively for your <strong>Client (<span id="bannerClientName" style="font-weight: 600;">Client</span>)</strong>. If you are previewing this link, <strong>do not sign below</strong>—simply copy this URL and send it to your client to sign.</div>
-            </div>
+          <div class="role-toggle-bar" id="roleToggleBar" hidden>
+            <span style="font-weight: 600; color: #384036;">Sign as:</span>
+            <button class="role-btn active" id="btnRoleClient" type="button">Client</button>
+            <button class="role-btn" id="btnRoleProvider" type="button">Provider</button>
           </div>
 
-          <h3 id="signBoxHeading">Client Signature Acceptance</h3>
+          <h3 id="signBoxHeading">Electronic Signature Acceptance</h3>
           <p class="hint" id="signBoxHint">Type your full legal name below to generate your electronic signature.</p>
 
           <div class="field">
@@ -644,17 +642,37 @@
         el('eyebrow').textContent = 'Executed Legal Agreement';
       }
 
-      function setupClientSigningForm() {
+      function setupSignFormForRole(role) {
+        activeRole = role;
         if (!currentDoc) return;
-        el('signBoxHeading').textContent = `Client Acceptance: Sign as ${currentDoc.client}`;
-        el('signBoxHint').textContent = `Please enter the legal name for ${currentDoc.client} to accept and execute this contract.`;
-        el('signerLabel').innerHTML = `Full Legal Name for <strong>${esc(currentDoc.client)}</strong> (Client)`;
-        nameInput.placeholder = `e.g. ${currentDoc.client}`;
-        el('signBtnText').textContent = `Sign & Execute as Client (${currentDoc.client})`;
-        if (el('bannerProvName')) el('bannerProvName').textContent = currentDoc.providerSigner || 'Julia Singerman';
-        if (el('bannerClientName')) el('bannerClientName').textContent = currentDoc.client;
+
+        if (role === 'client') {
+          el('signBoxHeading').textContent = `Sign Agreement as Client (${currentDoc.client})`;
+          el('signBoxHint').textContent = `Please enter the legal name for ${currentDoc.client} to execute this contract.`;
+          el('signerLabel').innerHTML = `Full Legal Name for <strong>${esc(currentDoc.client)}</strong>`;
+          nameInput.placeholder = `e.g. ${currentDoc.client}`;
+          el('signBtnText').textContent = `Sign & Execute as Client (${currentDoc.client})`;
+        } else {
+          el('signBoxHeading').textContent = `Update Provider Signature (${currentDoc.provider})`;
+          el('signBoxHint').textContent = `Authorized signer for ${currentDoc.provider}.`;
+          el('signerLabel').innerHTML = `Authorized Signer Name for <strong>${esc(currentDoc.provider)}</strong>`;
+          nameInput.placeholder = `e.g. ${currentDoc.providerSigner || 'Julia Singerman'}`;
+          el('signBtnText').textContent = `Authorize as Provider (${currentDoc.provider})`;
+        }
         updatePreview();
       }
+
+      el('btnRoleClient').addEventListener('click', () => {
+        el('btnRoleClient').classList.add('active');
+        el('btnRoleProvider').classList.remove('active');
+        setupSignFormForRole('client');
+      });
+
+      el('btnRoleProvider').addEventListener('click', () => {
+        el('btnRoleProvider').classList.add('active');
+        el('btnRoleClient').classList.remove('active');
+        setupSignFormForRole('provider');
+      });
 
       if (!token) {
         state('This signing link is missing or invalid. Please check the URL provided.', true);
@@ -691,7 +709,8 @@
           if (d.status === 'signed' && d.signer) {
             renderExecutedSuccess(d);
           } else {
-            setupClientSigningForm();
+            el('roleToggleBar').hidden = false;
+            setupSignFormForRole('client');
           }
         })
         .catch(e => state(e.message, true));
@@ -713,24 +732,27 @@
               token,
               signer: signerName,
               consent: consentCheck.checked,
-              role: 'client'
+              role: activeRole
             })
           });
 
           const res = await r.json();
           if (!r.ok) throw Error(res.error || 'Could not record signature');
 
-          currentDoc.status = 'signed';
-          currentDoc.signer = signerName;
-          currentDoc.signedAt = new Date().toISOString();
-          renderDualSignatures(currentDoc);
-          renderExecutedSuccess(currentDoc);
-        } catch (e) {
-          el('notice').innerHTML = '<div class="message error">' + esc(e.message) + '</div>';
-          btn.disabled = false;
-          btn.textContent = 'Sign & Execute Agreement';
-        }
-      });
+          if (activeRole === 'provider') {
+            currentDoc.providerSigner = signerName;
+            currentDoc.providerSignedAt = new Date().toISOString();
+            renderDualSignatures(currentDoc);
+            el('notice').innerHTML = '<div class="message">✓ Provider authorization signature updated.</div>';
+            btn.disabled = false;
+            btn.textContent = 'Update Authorization';
+          } else {
+            currentDoc.status = 'signed';
+            currentDoc.signer = signerName;
+            currentDoc.signedAt = new Date().toISOString();
+            renderDualSignatures(currentDoc);
+            renderExecutedSuccess(currentDoc);
+          }
         } catch (e) {
           el('notice').innerHTML = '<div class="message error">' + esc(e.message) + '</div>';
           btn.disabled = false;
