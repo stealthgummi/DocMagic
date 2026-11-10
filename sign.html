@@ -17,21 +17,22 @@ const state=(msg,error=false)=>{el('state').hidden=false;el('state').className='
 const btn=el('signBtn'),name=el('signer'),consent=el('consent');function ready(){btn.disabled=!(name.value.trim()&&consent.checked)}name.addEventListener('input',ready);consent.addEventListener('change',ready);
 
 function renderDualSignatures(d){
-  const isSigned = d.status === 'signed';
-  const createdDate = d.createdAt ? new Date(d.createdAt).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}) : (d.date ? new Date(d.date+'T12:00:00').toLocaleDateString() : '—');
+  const isSigned = d.status === 'signed' && d.signer;
+  const createdDate = d.providerSignedAt ? new Date(d.providerSignedAt).toLocaleString(undefined, {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}) : (d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '—');
   const signedDate = d.signedAt ? new Date(d.signedAt).toLocaleString() : '';
+  const provSigner = d.providerSigner || 'Julia Singerman';
 
   el('dualSignatures').innerHTML = `
     <div class="sig-card">
       <div class="sig-role">Provider (Authorizing Signature)</div>
-      <div class="sig-name">✓ ${esc(d.provider)}</div>
-      <div class="sig-detail">Signed &amp; executed by Provider<br>Date: ${createdDate}</div>
+      <div class="sig-name">✓ ${esc(provSigner)}</div>
+      <div class="sig-detail">Authorized signer for <strong>${esc(d.provider || '7Layer Studio')}</strong><br>Date: ${createdDate}</div>
     </div>
     <div class="sig-card">
       <div class="sig-role">Client (Accepting Signature)</div>
       ${isSigned 
         ? `<div class="sig-name">✓ ${esc(d.signer)}</div>
-           <div class="sig-detail">Signed electronically by Client<br>Date: ${signedDate}</div>`
+           <div class="sig-detail">Signed electronically by Client (<strong>${esc(d.client)}</strong>)<br>Date: ${signedDate}</div>`
         : `<div class="sig-name pending">⏳ Pending Client Signature</div>
            <div class="sig-detail">Awaiting signature from <strong>${esc(d.client)}</strong></div>`
       }
@@ -42,13 +43,15 @@ function renderDualSignatures(d){
 if(!token){state('This signing link is missing or invalid.',true);return}
 fetch('/api/sign?token='+encodeURIComponent(token)).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load agreement');currentDoc=d;el('title').textContent=d.title;el('sub').textContent='Sent by '+d.provider+(d.date?' · Effective '+new Date(d.date+'T12:00:00').toLocaleDateString():'');el('meta').innerHTML='<strong>Between</strong> '+esc(d.provider)+' (“Provider”)<br><strong>And</strong> '+esc(d.client)+' (“Client”)';el('terms').innerHTML=String(d.terms).split(/\n\s*\n/).map(p=>'<p>'+esc(p).replace(/\n/g,'<br>')+'</p>').join('');el('state').hidden=true;el('agreement').hidden=false;
 renderDualSignatures(d);
-if(el('signerLabel')) el('signerLabel').innerHTML='Client signature &mdash; Type legal name for <strong>'+esc(d.client)+'</strong>';
-if(d.status==='signed'){
-  el('signBox').innerHTML='<div class="message" style="background:#edf7ed;color:#1e4620;border:1px solid #c8e6c9;"><strong>✓ Agreement Fully Executed &amp; Legally Binding</strong><br>Both Provider and Client have signed this agreement. A permanent record has been archived.</div><button class="btn" onclick="window.print()">Print / save executed copy</button>';
+if(el('signerLabel')) el('signerLabel').innerHTML='Client Signature &mdash; Type legal name for <strong>'+esc(d.client)+'</strong>';
+if(el('signer')) el('signer').placeholder='Type full legal name (e.g. '+esc(d.client)+')';
+if(el('signBtn')) el('signBtn').textContent='Sign agreement as Client ('+esc(d.client)+')';
+if(d.status==='signed' && d.signer){
+  el('signBox').innerHTML='<div class="message" style="background:#edf7ed;color:#1e4620;border:1px solid #c8e6c9;"><strong>✓ Agreement Fully Executed &amp; Legally Binding</strong><br>Both Provider ('+esc(d.providerSigner||'Julia Singerman')+') and Client ('+esc(d.signer)+') have signed this agreement. A permanent record has been archived.</div><button class="btn" onclick="window.print()">Print / save executed copy</button>';
 }}
 ).catch(e=>state(e.message,true));
 btn.addEventListener('click',async()=>{btn.disabled=true;btn.textContent='Recording signature…';el('notice').textContent='';try{const r=await fetch('/api/sign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,signer:name.value.trim(),consent:consent.checked})});const d=await r.json();if(!r.ok)throw Error(d.error||'Could not record signature');
 if(currentDoc){currentDoc.status='signed';currentDoc.signer=name.value.trim();currentDoc.signedAt=new Date().toISOString();renderDualSignatures(currentDoc);}
-el('signBox').innerHTML='<div class="message" style="background:#edf7ed;color:#1e4620;border:1px solid #c8e6c9;"><strong>✓ Agreement Fully Executed &amp; Legally Binding</strong><br>Both Provider and Client have signed this agreement. A permanent record has been archived.</div><button class="btn" onclick="window.print()">Print / save executed copy</button>';el('title').textContent='Agreement signed';}catch(e){el('notice').innerHTML='<div class="message error">'+esc(e.message)+'</div>';btn.disabled=false;btn.textContent='Sign agreement'}});
+el('signBox').innerHTML='<div class="message" style="background:#edf7ed;color:#1e4620;border:1px solid #c8e6c9;"><strong>✓ Agreement Fully Executed &amp; Legally Binding</strong><br>Both Provider and Client have signed this agreement. A permanent record has been archived.</div><button class="btn" onclick="window.print()">Print / save executed copy</button>';el('title').textContent='Agreement signed';}catch(e){el('notice').innerHTML='<div class="message error">'+esc(e.message)+'</div>';btn.disabled=false;btn.textContent='Sign agreement as Client ('+(currentDoc?currentDoc.client:'')+')'}});
 })();
 </script></body></html>

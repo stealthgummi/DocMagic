@@ -162,14 +162,17 @@
         <div class="section-head"><h2>People &amp; details</h2><span class="step">01 / DETAILS</span></div>
         <div class="field"><label for="title">Contract name</label><input id="title" placeholder="e.g. Social Revenue Share Agreement"></div>
         <div class="pair">
-          <div class="field"><label for="sender">Your name / business</label><input id="sender" name="7layer_provider_name" placeholder="7Layer Studio" autocomplete="off"></div>
-          <div class="field"><label for="client">Client name</label><input id="client" name="7layer_client_name" placeholder="Client full name" autocomplete="off"></div>
+          <div class="field"><label for="sender">Your business name</label><input id="sender" name="7layer_provider_name" placeholder="7Layer Studio" autocomplete="off"></div>
+          <div class="field"><label for="providerSigner">Your signer name (You)</label><input id="providerSigner" name="7layer_provider_signer" placeholder="Julia Singerman" autocomplete="off"></div>
         </div>
         <div class="pair">
           <div class="field"><label for="senderEmail">Your email (Sender)</label><input id="senderEmail" name="7layer_provider_email" type="email" placeholder="contracts@7layer.store" autocomplete="off"></div>
+          <div class="field"><label for="date">Effective date</label><input id="date" type="date"></div>
+        </div>
+        <div class="pair">
+          <div class="field"><label for="client">Client name (Signer)</label><input id="client" name="7layer_client_name" placeholder="Client full name" autocomplete="off"></div>
           <div class="field"><label for="email">Client email (Recipient)</label><input id="email" name="7layer_client_email" type="email" placeholder="client@example.com" autocomplete="off"></div>
         </div>
-        <div class="field"><label for="date">Effective date</label><input id="date" type="date"></div>
         <div class="divider"></div>
         <div class="field" id="productField"><label for="productName">Specific product name <span style="font-weight: 400; color: var(--muted);">(used in 50/50 Revenue Share template)</span></label><input id="productName" placeholder="e.g. The Natal Crucible: Master Guide &amp; Portal"></div>
         <div class="section-head"><h2>Agreement terms</h2><select class="template-select" id="template"><option value="revenue_share">50/50 Social Revenue Share (Named Product)</option><option value="custom">Start from scratch</option><option value="services">Service agreement</option><option value="consulting">Consulting agreement</option><option value="nda">Confidentiality agreement</option></select></div>
@@ -253,7 +256,7 @@
   <script>
     (()=>{
       const $=id=>document.getElementById(id); 
-      const ids=['title','sender','client','email','senderEmail','date','productName','terms']; 
+      const ids=['title','sender','providerSigner','client','email','senderEmail','date','productName','terms']; 
       const storageKey='clause-contract-draft-v1';
 
       function generateRevenueShare(prodName) {
@@ -304,7 +307,7 @@ This document records the complete understanding of the parties regarding ${name
         $('docBrand').textContent=d.title.trim()||'7Layer Studio Agreement';
         $('docSender').textContent=d.sender.trim()||'7Layer Studio';
         $('docClient').textContent=d.client.trim()||'Client name';
-        $('sigSender').textContent=d.sender.trim()||'7Layer Studio';
+        $('sigSender').textContent=d.providerSigner.trim() ? d.providerSigner.trim() + ' (for ' + (d.sender.trim()||'7Layer Studio') + ')' : (d.sender.trim()||'7Layer Studio');
         $('sigClient').textContent=d.client.trim()||'Client';
         $('docDate').textContent=d.date?new Date(d.date+'T12:00:00').toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'—';
         const terms=d.terms.trim();
@@ -361,6 +364,7 @@ This document records the complete understanding of the parties regarding ${name
         ids.forEach(id=>$(id).value='');
         $('template').value='revenue_share';
         $('sender').value='7Layer Studio';
+        $('providerSigner').value='Julia Singerman';
         $('senderEmail').value='contracts@7layer.store';
         $('date').value=new Date().toISOString().slice(0,10);
         $('terms').value=generateRevenueShare('');
@@ -375,6 +379,7 @@ This document records the complete understanding of the parties regarding ${name
         if(saved) ids.forEach(id=>$(id).value=saved[id]||'');
       }catch{}
       if(!$('sender').value || $('sender').value==='Client name') $('sender').value='7Layer Studio';
+      if(!$('providerSigner').value) $('providerSigner').value='Julia Singerman';
       if(!$('senderEmail').value || $('senderEmail').value==='contract@7layer.store' || $('senderEmail').value===$('email').value) {
         $('senderEmail').value='contracts@7layer.store';
       }
@@ -407,7 +412,7 @@ This document records the complete understanding of the parties regarding ${name
   <script>
     (()=>{
       const get=id=>document.getElementById(id);
-      const fields=['title','sender','client','email','senderEmail','date','productName','terms'];
+      const fields=['title','sender','providerSigner','client','email','senderEmail','date','productName','terms'];
       const readDraft=()=>Object.fromEntries(fields.map(id=>[id,get(id).value]));
       const notify=msg=>{get('toast').textContent=msg;get('toast').classList.add('show');setTimeout(()=>get('toast').classList.remove('show'),2400)};
       const gate=get('loginGate');
@@ -479,7 +484,7 @@ This document records the complete understanding of the parties regarding ${name
           response=await fetch('/api/requests',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({title:d.title,provider:d.sender,providerEmail:d.senderEmail,client:d.client,email:d.email,date:d.date,terms:d.terms})
+            body:JSON.stringify({title:d.title,provider:d.sender,providerSigner:d.providerSigner||'Julia Singerman',providerEmail:d.senderEmail,client:d.client,email:d.email,date:d.date,terms:d.terms})
           });
           const result=await response.json();
           if(!response.ok) throw new Error(result.error||'Unable to create signature request.');

@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
 
     try {
       const sql = database();
-      // Ensure the table exists automatically
+      // Ensure the table and dual-signature columns exist automatically
       await sql`
         CREATE TABLE IF NOT EXISTS contract_requests (
           id text primary key,
@@ -36,13 +36,17 @@ module.exports = async (req, res) => {
           signer_name text,
           signer_ip text,
           signer_user_agent text,
-          signer_consent boolean not null default false
+          signer_consent boolean not null default false,
+          provider_signer_name text,
+          provider_signed_at timestamptz
         );
       `;
+      await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signer_name text;`;
+      await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signed_at timestamptz;`;
 
       if (req.query && req.query.id) {
         const [row] = await sql`
-          SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent
+          SELECT id, title, provider_name, provider_email, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent, provider_signer_name, provider_signed_at
           FROM contract_requests
           WHERE id = ${req.query.id}
           LIMIT 1
@@ -99,6 +103,7 @@ module.exports = async (req, res) => {
       id: randomUUID(),
       title: clean(data.title, 160) || 'Agreement',
       provider: clean(data.provider, 160) || '7Layer Studio',
+      providerSigner: clean(data.providerSigner, 160) || 'Julia Singerman',
       client: clean(data.client, 160),
       providerEmail,
       clientEmail,
@@ -113,8 +118,8 @@ module.exports = async (req, res) => {
     }
 
     const sql = database();
-    await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_name,client_email,effective_date,terms,token_hash)
-      VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash})`;
+    await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_name,client_email,effective_date,terms,token_hash,provider_signer_name,provider_signed_at)
+      VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash},${record.providerSigner},now())`;
 
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto = req.headers['x-forwarded-proto'] || 'https';

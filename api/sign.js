@@ -12,17 +12,38 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const token = typeof req.query.token === 'string' ? req.query.token : '';
       if (token.length < 30) return json(res, 400, { error: 'This signing link is not valid.' });
-      const rows = await sql`SELECT id,title,provider_name,client_name,effective_date,terms,status,created_at,signed_at,signer_name
+      const rows = await sql`SELECT id,title,provider_name,provider_signer_name,provider_signed_at,client_name,effective_date,terms,status,created_at,signed_at,signer_name
         FROM contract_requests WHERE token_hash=${hashToken(token)} LIMIT 1`;
       if (!rows.length) return json(res, 404, { error: 'This signing link is invalid or has expired.' });
       const row = rows[0];
-      return json(res, 200, { id: row.id, title: row.title, provider: row.provider_name, client: row.client_name, date: row.effective_date, terms: row.terms, status: row.status, createdAt: row.created_at, signedAt: row.signed_at, signer: row.signer_name });
+      return json(res, 200, {
+        id: row.id,
+        title: row.title,
+        provider: row.provider_name,
+        providerSigner: row.provider_signer_name || 'Julia Singerman',
+        providerSignedAt: row.provider_signed_at || row.created_at,
+        client: row.client_name,
+        date: row.effective_date,
+        terms: row.terms,
+        status: row.status,
+        createdAt: row.created_at,
+        signedAt: row.signed_at,
+        signer: row.signer_name
+      });
     }
-    const { token, signer, consent } = req.body || {};
+    const { token, signer, consent, role } = req.body || {};
     const signerName = typeof signer === 'string' ? signer.trim().slice(0, 160) : '';
     if (typeof token !== 'string' || token.length < 30 || !signerName || consent !== true) return json(res, 400, { error: 'Enter your name and confirm your agreement to sign.' });
     const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].slice(0, 64);
     const userAgent = (req.headers['user-agent'] || '').slice(0, 512);
+
+    if (role === 'provider') {
+      const updated = await sql`UPDATE contract_requests SET provider_signer_name=${signerName},provider_signed_at=now()
+        WHERE token_hash=${hashToken(token)} RETURNING id`;
+      if (!updated.length) return json(res, 404, { error: 'Could not update provider signature.' });
+      return json(res, 200, { ok: true, role: 'provider', signer: signerName });
+    }
+
     const updated = await sql`UPDATE contract_requests SET status='signed',signed_at=now(),signer_name=${signerName},signer_ip=${ip},signer_user_agent=${userAgent},signer_consent=true
       WHERE token_hash=${hashToken(token)} AND status='pending' AND ${consent === true} RETURNING id`;
     if (!updated.length) return json(res, 409, { error: 'This agreement has already been signed or the link is invalid.' });
