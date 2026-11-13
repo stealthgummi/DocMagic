@@ -120,7 +120,20 @@
   </style>
 </head>
 <body>
-  <div class="login-gate" id="loginGate"><form class="login-card" id="loginForm"><div class="brand"><div class="brandmark">C</div> clause</div><h1>Your private workspace</h1><p>Enter your owner passcode to access your contracts.</p><input id="ownerPassword" type="password" autocomplete="current-password" placeholder="Owner passcode" required><div class="login-error" id="loginError"></div><button class="btn primary" type="submit">Sign in</button></form></div>
+  <div class="login-gate" id="loginGate">
+    <form class="login-card" id="loginForm">
+      <div class="brand"><div class="brandmark">C</div> clause</div>
+      <h1>Select your workspace</h1>
+      <p>Sign in to your isolated contract &amp; Hostinger inbox workspace.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;" id="wsSelector">
+        <button type="button" class="btn small" id="wsBtnFlipbooks" data-ws="flipbooks" style="justify-content:center;padding:9px 10px;">✦ Flipbooks Media</button>
+        <button type="button" class="btn small" id="wsBtn7Layer" data-ws="7layer" style="justify-content:center;padding:9px 10px;">7Layer Studio</button>
+      </div>
+      <input id="ownerPassword" type="password" autocomplete="current-password" placeholder="Workspace passcode" required>
+      <div class="login-error" id="loginError"></div>
+      <button class="btn primary" type="submit">Sign in</button>
+    </form>
+  </div>
   
   <!-- Signing Link Share Modal -->
   <div class="login-gate hidden" id="shareModal">
@@ -139,7 +152,7 @@
 
   <header class="topbar">
     <div class="top-left">
-      <div class="brand"><div class="brandmark">C</div> clause</div>
+      <div class="brand"><div class="brandmark">C</div> clause <span id="workspacePill" style="font-size:11px;padding:3px 9px;border-radius:99px;background:var(--soft);color:var(--green);font-weight:700;margin-left:4px;">Workspace</span></div>
       <nav class="nav-tabs">
         <button class="btn small tab-btn active" id="tabEditor">Contract Editor</button>
         <button class="btn small tab-btn" id="tabContracts">All Contracts <span class="tab-badge" id="contractsBadge">0</span></button>
@@ -157,34 +170,34 @@
   <!-- VIEW 1: CONTRACT EDITOR -->
   <main class="layout" id="viewEditor">
     <section class="editor-column">
-      <div class="intro"><div class="eyebrow">7Layer Studio Agreements</div><h1>Make an agreement.</h1><p>Fill in details, select a template, and send to your client for 1-click electronic signature.</p></div>
+      <div class="intro"><div class="eyebrow" id="editorEyebrow">7Layer Studio Agreements</div><h1>Make an agreement.</h1><p>Fill in details, select a template, and send to your client for 1-click electronic signature.</p></div>
       <div class="editor-card">
         <div class="section-head"><h2>People &amp; details</h2><span class="step">01 / DETAILS</span></div>
         <div class="field"><label for="title">Contract name</label><input id="title" placeholder="e.g. Social Revenue Share Agreement"></div>
         <div class="pair">
-          <div class="field"><label for="sender">Your business name</label><input id="sender" name="7layer_provider_name" placeholder="7Layer Studio" autocomplete="off"></div>
-          <div class="field"><label for="providerSigner">Your signer name (You)</label><input id="providerSigner" name="7layer_provider_signer" placeholder="Julia Singerman" autocomplete="off"></div>
+          <div class="field"><label for="sender">Your business name</label><input id="sender" name="provider_name" placeholder="Flipbooks Media" autocomplete="off"></div>
+          <div class="field"><label for="providerSigner">Your signer name (You)</label><input id="providerSigner" name="provider_signer" placeholder="Jaque Hill" autocomplete="off"></div>
         </div>
         <div class="pair">
-          <div class="field"><label for="senderEmail">Your email (Sender)</label><input id="senderEmail" name="7layer_provider_email" type="email" placeholder="contracts@7layer.store" autocomplete="off"></div>
+          <div class="field"><label for="senderEmail">Your email (Sender)</label><input id="senderEmail" name="provider_email" type="email" placeholder="license@flipbooks.media" autocomplete="off"></div>
           <div class="field"><label for="date">Effective date</label><input id="date" type="date"></div>
         </div>
         <div class="pair">
-          <div class="field"><label for="clientCompany">Client company / business name</label><input id="clientCompany" name="7layer_client_company" placeholder="e.g. Apex Marketing LLC (or leave blank if individual)" autocomplete="off"></div>
-          <div class="field"><label for="client">Client signer name</label><input id="client" name="7layer_client_name" placeholder="Client full name" autocomplete="off"></div>
+          <div class="field"><label for="clientCompany">Client company / channel name</label><input id="clientCompany" name="client_company" placeholder="e.g. Creator Channel LLC (or leave blank if individual)" autocomplete="off"></div>
+          <div class="field"><label for="client">Client signer name</label><input id="client" name="client_name" placeholder="Client full name" autocomplete="off"></div>
         </div>
-        <div class="field"><label for="email">Client email (Recipient)</label><input id="email" name="7layer_client_email" type="email" placeholder="client@example.com" autocomplete="off"></div>
+        <div class="field"><label for="email">Client email (Recipient)</label><input id="email" name="client_email" type="email" placeholder="client@example.com" autocomplete="off"></div>
         <div class="divider"></div>
-        <div class="field" id="productField"><label for="productName">Specific product name <span style="font-weight: 400; color: var(--muted);">(used in 50/50 Revenue Share template)</span></label><input id="productName" placeholder="e.g. The Natal Crucible: Master Guide &amp; Portal"></div>
-        <div class="section-head"><h2>Agreement terms</h2><select class="template-select" id="template"><option value="revenue_share">50/50 Social Revenue Share (Named Product)</option><option value="custom">Start from scratch</option><option value="services">Service agreement</option><option value="consulting">Consulting agreement</option><option value="nda">Confidentiality agreement</option></select></div>
+        <div class="field" id="productField"><label for="productName">Specific publication / product name <span style="font-weight: 400; color: var(--muted);">(used in 50/50 Revenue Share templates)</span></label><input id="productName" placeholder="e.g. The ADHD Dopamine Boost Blueprint"></div>
+        <div class="section-head"><h2>Agreement terms</h2><select class="template-select" id="template"><option value="revenue_share">50/50 Social Revenue Share (Named Product)</option><option value="flipbook_partner">50/50 Flipbook Creator Partner Co-Publishing</option><option value="custom">Start from scratch</option><option value="services">Service agreement</option><option value="consulting">Consulting agreement</option><option value="nda">Confidentiality agreement</option></select></div>
         <div class="field"><label for="terms">What have you agreed?</label><textarea id="terms" class="clause" placeholder="Describe the work, payment, timing, and any other terms..."></textarea><p class="hint">Terms update dynamically as you type your product name above.</p></div>
         <div class="actions"><button class="btn" id="saveBtn">Save draft</button><button class="btn" id="copyBtn">Copy contract text</button><button class="btn primary" id="printBtn">Download / print</button></div>
         <div class="captcha-wrap"><p id="securityStatus">Sign in to send a request. Your client signs through their private link with zero account required.</p></div>
-        <div class="secure-note"><span>✦</span><span><b>Direct Delivery:</b> Sent via Hostinger SMTP from <b>contracts@7layer.store</b>. Instant copyable link generated automatically.</span></div>
+        <div class="secure-note"><span>✦</span><span><b>Direct Delivery:</b> Sent via Hostinger SMTP from <b id="smtpDirectEmail">contracts@7layer.store</b>. Instant copyable link generated automatically.</span></div>
       </div>
     </section>
     <section class="preview-wrap"><div class="preview-bar"><div class="preview-label">Live preview <span>Updates as you type</span></div><div class="preview-actions"><button class="btn small" id="printBtnTop">Print / PDF</button></div></div>
-      <article class="paper" id="paper"><div class="doc-brand" id="docBrand">Agreement</div><h2 id="docTitle">Untitled agreement</h2><div class="doc-subtitle">Prepared <span id="docDate">&mdash;</span></div><div class="doc-meta"><div><strong>Between</strong> <span id="docSender">7Layer Studio</span> (&ldquo;Provider&rdquo;)</div><div><strong>And</strong> <span id="docClient">Client name</span> (&ldquo;Client&rdquo;)</div></div><div class="doc-body" id="docTerms"><span class="empty">Your agreement terms will appear here.</span></div><div class="signatures"><div class="sig-line"><strong id="sigSender">7Layer Studio</strong>Signature &amp; date</div><div class="sig-line"><strong id="sigClient">Client</strong>Signature &amp; date</div></div><div class="signature-status"><i class="status-dot"></i> Signatures pending</div></article><div class="footer-note">7Layer Studio &middot; Confidential Contract Draft</div>
+      <article class="paper" id="paper"><div class="doc-brand" id="docBrand">Agreement</div><h2 id="docTitle">Untitled agreement</h2><div class="doc-subtitle">Prepared <span id="docDate">&mdash;</span></div><div class="doc-meta"><div><strong>Between</strong> <span id="docSender">7Layer Studio</span> (&ldquo;Provider&rdquo;)</div><div><strong>And</strong> <span id="docClient">Client name</span> (&ldquo;Client&rdquo;)</div></div><div class="doc-body" id="docTerms"><span class="empty">Your agreement terms will appear here.</span></div><div class="signatures"><div class="sig-line"><strong id="sigSender">7Layer Studio</strong>Signature &amp; date</div><div class="sig-line"><strong id="sigClient">Client</strong>Signature &amp; date</div></div><div class="signature-status"><i class="status-dot"></i> Signatures pending</div></article><div class="footer-note" id="paperFooterNote">Confidential Contract Draft</div>
     </section>
   </main>
 
@@ -226,7 +239,7 @@
       <div>
         <div class="eyebrow">Hostinger Webmail &middot; IMAP</div>
         <h1 style="font: 500 28px Georgia,serif; margin: 6px 0 4px;">Contracts Inbox</h1>
-        <p style="margin: 0; color: var(--muted); font-size: 13px;">Direct mail stream for <strong style="color: var(--ink);">contracts@7layer.store</strong></p>
+        <p style="margin: 0; color: var(--muted); font-size: 13px;">Direct mail stream for <strong style="color: var(--ink);" id="inboxAccountEmail">contracts@7layer.store</strong></p>
       </div>
       <div>
         <button class="btn small primary" id="refreshInboxBtn">&#8635; Check Mail</button>
@@ -258,11 +271,39 @@
     (()=>{
       const $=id=>document.getElementById(id); 
       const ids=['title','sender','providerSigner','clientCompany','client','email','senderEmail','date','productName','terms']; 
-      const storageKey='clause-contract-draft-v1';
+
+      const WS_PROFILES = {
+        '7layer': {
+          id: '7layer',
+          brandName: '7Layer Studio',
+          eyebrow: '7Layer Studio Agreements',
+          defaultSigner: 'Julia Singerman',
+          defaultEmail: 'contracts@7layer.store',
+          draftKey: 'clause-contract-draft-v1',
+          defaultTemplate: 'revenue_share',
+          defaultTitle: 'Social Revenue Share Agreement',
+          productPlaceholder: 'e.g. The Natal Crucible: Master Guide & Portal'
+        },
+        flipbooks: {
+          id: 'flipbooks',
+          brandName: 'Flipbooks Media',
+          eyebrow: 'Flipbooks Media · Partner & Licensing Agreements',
+          defaultSigner: 'Jaque Hill',
+          defaultEmail: 'license@flipbooks.media',
+          draftKey: 'clause-contract-draft-flipbooks-v1',
+          defaultTemplate: 'flipbook_partner',
+          defaultTitle: '50/50 Creator Partner Co-Publishing Agreement',
+          productPlaceholder: 'e.g. The ADHD Dopamine Boost Blueprint (3D Flipbook Edition)'
+        }
+      };
+
+      let activeWs = '7layer';
+      const currentProfile = () => WS_PROFILES[activeWs] || WS_PROFILES['7layer'];
 
       function generateRevenueShare(prodName, provName, clientName, clientCompany) {
+        const prof = currentProfile();
         const name = (prodName || $('productName')?.value || '').trim() || '[INSERT PRODUCT NAME]';
-        const producer = (provName || $('sender')?.value || '').trim() || '7Layer Studio';
+        const producer = (provName || $('sender')?.value || '').trim() || prof.brandName;
         const cName = (clientName || $('client')?.value || '').trim() || 'Client';
         const cComp = (clientCompany || $('clientCompany')?.value || '').trim();
         const creator = cComp && cName ? `${cName} of ${cComp}` : (cComp || cName);
@@ -297,6 +338,40 @@ Either party may terminate this collaboration with thirty (30) days’ written n
 This document records the complete understanding of the parties regarding ${name}. Electronic signatures submitted through this portal are legally binding.`;
       }
 
+      function generateFlipbookPartner(prodName, provName, clientName, clientCompany) {
+        const name = (prodName || $('productName')?.value || '').trim() || '[INSERT 3D FLIPBOOK TITLE]';
+        const publisher = (provName || $('sender')?.value || '').trim() || 'Flipbooks Media';
+        const cName = (clientName || $('client')?.value || '').trim() || 'Creator Partner';
+        const cComp = (clientCompany || $('clientCompany')?.value || '').trim();
+        const creator = cComp && cName ? `${cName} (${cComp})` : (cComp || cName);
+        return `1. CO-PUBLISHED 3D FLIPBOOK EDITION & APPOINTMENT
+This Agreement governs the commercial co-publishing, licensing, and promotion of the following interactive Flipbooks Media publication:
+• Publication Title: ${name}
+• Format & Deliverables: Hosted interactive 3D Flipbook on flipbooks.media, watermarked public sample preview, verified buyer license delivery, printable worksheets, and any companion web trackers (collectively, the "Publication").
+
+${publisher} ("Publisher") and ${creator} ("Creator Partner") agree to collaborate on the audience launch and ongoing sales of ${name} across Creator Partner’s YouTube, podcast, newsletter, social channels, and description/bio links.
+
+2. ROLES & RESPONSIBILITIES
+• Publisher Responsibilities: Publisher provides 3D Flipbook authoring, flipbooks.media cloud hosting, Stripe Checkout & License Key fulfillment, customer delivery emails, and partner referral tracking (?ref= attribution).
+• Creator Partner Responsibilities: Creator Partner showcases and promotes ${name} to Creator Partner’s audience via dedicated or integrated video features, pinned comments, description links, and social placements using the tracked partner link provided by Publisher.
+
+3. 50/50 NET REVENUE SHARE
+• Equal Split: Net Revenue generated from tracked sales of ${name} through Creator Partner’s attributed checkout link shall be split fifty percent (50%) to Creator Partner and fifty percent (50%) to Publisher.
+• Net Revenue Defined: Gross customer receipts collected via Stripe minus actual payment processor fees, taxes collected/remitted, chargebacks, and verified customer refunds.
+• Monthly Accounting & Payout: Publisher will deliver a transparent monthly partner sales statement and remit Creator Partner’s 50% payout by the 5th business day of each month for the prior calendar month.
+
+4. REVIEW COPIES, LICENSING & INTELLECTUAL PROPERTY
+• Partner Edition: Upon execution, Publisher issues Creator Partner an unwatermarked Verified Partner License Key for live on-camera demonstration. Public visitors receive only the watermarked sample preview until purchase.
+• Brand & Platform Ownership: Creator Partner retains 100% ownership of Creator Partner’s name, channel, likeness, and original media. Publisher retains 100% ownership of the Flipbooks Media 3D engine, vault infrastructure, license registry, and base publication files.
+• Channel Protection: Neither party shall upload unwatermarked master HTML vault files to public file-sharing repositories or authorize unlicensed third-party resale outside the agreed Flipbooks Media checkout funnel.
+
+5. TERM & TERMINATION
+Either party may end this promotional partnership upon thirty (30) days’ written notice to license@flipbooks.media. All verified buyers who purchased prior to termination retain perpetual access to their licensed copies, and Creator Partner receives 100% of accrued 50% royalties through the effective termination date.
+
+6. ENTIRE BINDING ELECTRONIC AGREEMENT
+This document sets forth the complete agreement between Publisher and Creator Partner for ${name}. Electronic signatures executed on this page are legally binding under the ESIGN Act and UETA.`;
+      }
+
       const templates={
         services:'1. Services\nProvider will perform the following services for Client:\n[Describe the services and deliverables]\n\n2. Fees and payment\nClient will pay Provider [amount and payment schedule]. Expenses require Client’s prior approval.\n\n3. Schedule\nWork will begin on [start date] and is expected to be completed by [date]. The parties will agree in writing to changes in scope or timing.\n\n4. Changes and cancellation\nAny changes to the services or fees must be agreed by both parties in writing. Either party may end this agreement with [notice period] written notice.\n\n5. Entire agreement\nThis document records the parties’ agreement and may be changed only in writing signed by both parties.',
         consulting:'1. Consulting services\nConsultant will provide advice and services to Client concerning [project or subject]. The scope and deliverables are: [describe].\n\n2. Fees\nClient will pay Consultant [amount / rate] according to this schedule: [payment terms].\n\n3. Term\nThis agreement begins on [date] and continues until [end date or completion], unless ended earlier by either party with [notice] written notice.\n\n4. Confidential information\nEach party will use the other party’s confidential information only as needed to perform this agreement and will take reasonable steps to protect it.\n\n5. Entire agreement\nChanges to this agreement must be in writing and agreed by both parties.',
@@ -305,12 +380,13 @@ This document records the complete understanding of the parties regarding ${name
 
       function showToast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2400)}
       function read(){return Object.fromEntries(ids.map(id=>[id,$(id).value]))}
-      function save(){localStorage.setItem(storageKey,JSON.stringify(read()));$('saveState').textContent='Saved just now';setTimeout(()=>$('saveState').textContent='Saved in this browser',1800)}
+      function save(){localStorage.setItem(currentProfile().draftKey,JSON.stringify(read()));$('saveState').textContent='Saved just now';setTimeout(()=>$('saveState').textContent='Saved in this browser',1800)}
       function render(){
+        const prof=currentProfile();
         const d=read();
         $('docTitle').textContent=d.title.trim()||'Untitled agreement';
-        $('docBrand').textContent=d.title.trim()||'7Layer Studio Agreement';
-        $('docSender').textContent=d.sender.trim()||'7Layer Studio';
+        $('docBrand').textContent=d.title.trim()||(prof.brandName+' Agreement');
+        $('docSender').textContent=d.sender.trim()||prof.brandName;
 
         const clientComp = (d.clientCompany || '').trim();
         const clientPerson = (d.client || '').trim();
@@ -328,7 +404,7 @@ This document records the complete understanding of the parties regarding ${name
         }
 
         $('docClient').textContent=clientDisplay;
-        $('sigSender').textContent=d.providerSigner.trim() ? d.providerSigner.trim() + ' (for ' + (d.sender.trim()||'7Layer Studio') + ')' : (d.sender.trim()||'7Layer Studio');
+        $('sigSender').textContent=d.providerSigner.trim() ? d.providerSigner.trim() + ' (for ' + (d.sender.trim()||prof.brandName) + ')' : (d.sender.trim()||prof.brandName);
         $('sigClient').textContent=clientSig;
         $('docDate').textContent=d.date?new Date(d.date+'T12:00:00').toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'—';
         const terms=d.terms.trim();
@@ -336,12 +412,25 @@ This document records the complete understanding of the parties regarding ${name
       }
       function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
       
-      ids.forEach(id=>$(id).addEventListener('input',()=>{render();clearTimeout(window.saveTimer);window.saveTimer=setTimeout(save,500)}));
+      ids.forEach(id=>$(id).addEventListener('input',()=>{
+        if ((id === 'sender' || id === 'client' || id === 'clientCompany') && ($('template').value === 'flipbook_partner' || $('template').value === 'revenue_share')) {
+          $('terms').value = $('template').value === 'flipbook_partner'
+            ? generateFlipbookPartner($('productName').value)
+            : generateRevenueShare($('productName').value);
+        }
+        render();clearTimeout(window.saveTimer);window.saveTimer=setTimeout(save,500);
+      }));
 
       $('template').addEventListener('change',e=>{
-        if(e.target.value==='revenue_share'){
+        if(e.target.value==='flipbook_partner'){
+          $('terms').value=generateFlipbookPartner($('productName').value);
+          const p=$('productName').value.trim();
+          $('title').value=p?'50/50 Creator Partner Agreement — '+p:'50/50 Creator Partner Co-Publishing Agreement';
+          render();save();
+          $('productName').focus();
+        } else if(e.target.value==='revenue_share'){
           $('terms').value=generateRevenueShare($('productName').value);
-          if(!$('title').value||$('title').value.startsWith('Social Revenue Share')){
+          if(!$('title').value||$('title').value.startsWith('Social Revenue Share')||$('title').value.startsWith('50/50 Creator Partner')){
             const p=$('productName').value.trim();
             $('title').value=p?'Social Revenue Share Agreement — '+p:'Social Revenue Share Agreement';
           }
@@ -354,7 +443,12 @@ This document records the complete understanding of the parties regarding ${name
       });
 
       $('productName').addEventListener('input',()=>{
-        if($('template').value==='revenue_share'||$('terms').value.includes('NAMED PRODUCT & APPOINTMENT')){
+        if($('template').value==='flipbook_partner'||$('terms').value.includes('CO-PUBLISHED 3D FLIPBOOK EDITION')){
+          $('terms').value=generateFlipbookPartner($('productName').value);
+          const p=$('productName').value.trim();
+          $('title').value=p?'50/50 Creator Partner Agreement — '+p:'50/50 Creator Partner Co-Publishing Agreement';
+          render();save();
+        } else if($('template').value==='revenue_share'||$('terms').value.includes('NAMED PRODUCT & APPOINTMENT')){
           $('terms').value=generateRevenueShare($('productName').value);
           if(!$('title').value||$('title').value.startsWith('Social Revenue Share')){
             const p=$('productName').value.trim();
@@ -376,42 +470,70 @@ This document records the complete understanding of the parties regarding ${name
       };
 
       function contractText(){
+        const prof=currentProfile();
         const d=read();
         const clientComp = (d.clientCompany || '').trim();
         const clientPerson = (d.client || '').trim();
         const clientDisplay = clientComp && clientPerson ? `${clientComp} (represented by ${clientPerson})` : (clientComp || clientPerson || 'Client');
-        return `${d.title||'Agreement'}\n\nPrepared: ${d.date||'—'}\n\nProvider: ${d.sender||'7Layer Studio'}\nClient: ${clientDisplay}\n\n${d.terms||''}\n\nProvider Signature: ____________________ Date: __________\nClient Signature: _____________________ Date: __________`;
+        return `${d.title||'Agreement'}\n\nPrepared: ${d.date||'—'}\n\nProvider: ${d.sender||prof.brandName}\nClient: ${clientDisplay}\n\n${d.terms||''}\n\nProvider Signature: ____________________ Date: __________\nClient Signature: _____________________ Date: __________`;
+      }
+
+      function resetEditorForWorkspace(prof) {
+        ids.forEach(id=>$(id).value='');
+        $('template').value=prof.defaultTemplate;
+        $('sender').value=prof.brandName;
+        $('providerSigner').value=prof.defaultSigner;
+        $('senderEmail').value=prof.defaultEmail;
+        $('clientCompany').value='';
+        $('date').value=new Date().toISOString().slice(0,10);
+        $('terms').value=prof.id==='flipbooks' ? generateFlipbookPartner('', prof.brandName) : generateRevenueShare('', prof.brandName);
+        $('title').value=prof.defaultTitle;
       }
 
       $('newBtn').onclick=$('contractsNewBtn').onclick=()=>{
         if(ids.some(id=>$(id).value.trim())&&!confirm('Start a new contract? The current draft is saved in this browser.')) return;
-        ids.forEach(id=>$(id).value='');
-        $('template').value='revenue_share';
-        $('sender').value='7Layer Studio';
-        $('providerSigner').value='Julia Singerman';
-        $('senderEmail').value='contracts@7layer.store';
-        $('clientCompany').value='';
-        $('date').value=new Date().toISOString().slice(0,10);
-        $('terms').value=generateRevenueShare('');
-        $('title').value='Social Revenue Share Agreement';
+        resetEditorForWorkspace(currentProfile());
         switchTab('editor');
         render();save();showToast('New contract ready');
       };
 
-      // Load initial state
-      try{
-        const saved=JSON.parse(localStorage.getItem(storageKey)||'null');
-        if(saved) ids.forEach(id=>$(id).value=saved[id]||'');
-      }catch{}
-      if(!$('sender').value || $('sender').value==='Client name') $('sender').value='7Layer Studio';
-      if(!$('providerSigner').value) $('providerSigner').value='Julia Singerman';
-      if(!$('senderEmail').value || $('senderEmail').value==='contract@7layer.store' || $('senderEmail').value===$('email').value) {
-        $('senderEmail').value='contracts@7layer.store';
-      }
-      if(!$('date').value) $('date').value=new Date().toISOString().slice(0,10);
-      if(!$('terms').value) $('terms').value=generateRevenueShare($('productName').value);
-      if(!$('title').value) $('title').value='Social Revenue Share Agreement';
-      render();
+      window.applyWorkspace = function(wsId) {
+        activeWs = wsId === 'flipbooks' ? 'flipbooks' : '7layer';
+        window.__activeWorkspace = activeWs;
+        const prof = currentProfile();
+
+        $('workspacePill').textContent = prof.brandName;
+        $('editorEyebrow').textContent = prof.eyebrow;
+        $('smtpDirectEmail').textContent = prof.defaultEmail;
+        $('inboxAccountEmail').textContent = prof.defaultEmail;
+        $('paperFooterNote').textContent = prof.brandName + ' · Confidential Contract Draft';
+        $('sender').placeholder = prof.brandName;
+        $('providerSigner').placeholder = prof.defaultSigner;
+        $('senderEmail').placeholder = prof.defaultEmail;
+        $('productName').placeholder = prof.productPlaceholder;
+
+        let loadedSaved = false;
+        try {
+          const saved = JSON.parse(localStorage.getItem(prof.draftKey) || 'null');
+          if (saved && (saved.sender || saved.terms)) {
+            ids.forEach(id => $(id).value = saved[id] || '');
+            loadedSaved = true;
+          }
+        } catch {}
+
+        if (!loadedSaved) {
+          resetEditorForWorkspace(prof);
+        } else {
+          if (!$('sender').value) $('sender').value = prof.brandName;
+          if (!$('providerSigner').value) $('providerSigner').value = prof.defaultSigner;
+          if (!$('senderEmail').value) $('senderEmail').value = prof.defaultEmail;
+          if (!$('date').value) $('date').value = new Date().toISOString().slice(0, 10);
+        }
+        render();
+      };
+
+      // Initialize default view prior to auth check
+      window.applyWorkspace(new URLSearchParams(location.search).get('ws') === 'flipbooks' ? 'flipbooks' : '7layer');
 
       // ============================================
       // TAB NAVIGATION & AUTH
@@ -441,20 +563,38 @@ This document records the complete understanding of the parties regarding ${name
       const readDraft=()=>Object.fromEntries(fields.map(id=>[id,get(id).value]));
       const notify=msg=>{get('toast').textContent=msg;get('toast').classList.add('show');setTimeout(()=>get('toast').classList.remove('show'),2400)};
       const gate=get('loginGate');
+      let selectedLoginWs = new URLSearchParams(location.search).get('ws') === 'flipbooks' ? 'flipbooks' : '';
+
+      function setLoginWsButtons(ws) {
+        selectedLoginWs = ws === 'flipbooks' ? 'flipbooks' : '7layer';
+        get('wsBtnFlipbooks').classList.toggle('primary', selectedLoginWs === 'flipbooks');
+        get('wsBtn7Layer').classList.toggle('primary', selectedLoginWs === '7layer');
+        get('ownerPassword').placeholder = selectedLoginWs === 'flipbooks' ? 'Flipbooks Media passcode' : '7Layer Studio passcode';
+      }
+
+      get('wsBtnFlipbooks').onclick = () => { setLoginWsButtons('flipbooks'); get('loginError').textContent=''; get('ownerPassword').focus(); };
+      get('wsBtn7Layer').onclick = () => { setLoginWsButtons('7layer'); get('loginError').textContent=''; get('ownerPassword').focus(); };
 
       async function checkSession(){
         try{
           const r=await fetch('/api/auth',{cache:'no-store'});
           const d=await r.json();
+          const urlWs = new URLSearchParams(location.search).get('ws');
+          if (!selectedLoginWs) {
+            setLoginWsButtons(urlWs === 'flipbooks' || urlWs === '7layer' ? urlWs : (d.defaultWorkspace || '7layer'));
+          } else {
+            setLoginWsButtons(selectedLoginWs);
+          }
           gate.classList.toggle('hidden',d.authenticated===true);
           if(!d.authenticated){
             get('ownerPassword').focus();
           } else {
-            // Pre-load counts
+            window.applyWorkspace(d.workspace || d.defaultWorkspace || '7layer');
             loadContracts();
             loadInbox(true);
           }
         }catch{
+          setLoginWsButtons(selectedLoginWs || '7layer');
           get('loginError').textContent='Sign-in requires deployed app and Vercel settings.';
         }
       }
@@ -463,10 +603,15 @@ This document records the complete understanding of the parties regarding ${name
         e.preventDefault();
         get('loginError').textContent='';
         try{
-          const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:get('ownerPassword').value})});
+          const r=await fetch('/api/auth',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({password:get('ownerPassword').value, workspace:selectedLoginWs})
+          });
           const d=await r.json();
           if(!r.ok) throw Error(d.error||'Unable to sign in');
           get('ownerPassword').value='';
+          window.applyWorkspace(d.workspace || selectedLoginWs || '7layer');
           gate.classList.add('hidden');
           loadContracts();
           loadInbox();
@@ -506,10 +651,11 @@ This document records the complete understanding of the parties regarding ${name
         send.textContent='Creating…';
         let response;
         try{
+          const defaultSigner = window.__activeWorkspace === 'flipbooks' ? 'Jaque Hill' : 'Julia Singerman';
           response=await fetch('/api/requests',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({title:d.title,provider:d.sender,providerSigner:d.providerSigner||'Julia Singerman',providerEmail:d.senderEmail,clientCompany:d.clientCompany,client:d.client,email:d.email,date:d.date,terms:d.terms})
+            body:JSON.stringify({title:d.title,provider:d.sender,providerSigner:d.providerSigner||defaultSigner,providerEmail:d.senderEmail,clientCompany:d.clientCompany,client:d.client,email:d.email,date:d.date,terms:d.terms})
           });
           const result=await response.json();
           if(!response.ok) throw new Error(result.error||'Unable to create signature request.');
@@ -610,12 +756,13 @@ This document records the complete understanding of the parties regarding ${name
           const data = await res.json();
           if(!res.ok) throw new Error(data.error || 'Failed to load contract');
           const r = data.request;
+          const isFb = (r.workspace || window.__activeWorkspace) === 'flipbooks';
           get('title').value = r.title || '';
-          get('sender').value = r.provider_name || '7Layer Studio';
-          get('providerSigner').value = r.provider_signer_name || 'Julia Singerman';
+          get('sender').value = r.provider_name || (isFb ? 'Flipbooks Media' : '7Layer Studio');
+          get('providerSigner').value = r.provider_signer_name || (isFb ? 'Jaque Hill' : 'Julia Singerman');
           get('clientCompany').value = r.client_company || '';
           get('client').value = r.client_name || '';
-          get('senderEmail').value = r.provider_email || 'contracts@7layer.store';
+          get('senderEmail').value = r.provider_email || (isFb ? 'license@flipbooks.media' : 'contracts@7layer.store');
           get('email').value = r.client_email || '';
           get('date').value = r.effective_date ? r.effective_date.slice(0, 10) : '';
           get('terms').value = r.terms || '';
@@ -735,5 +882,6 @@ This document records the complete understanding of the parties regarding ${name
       function escapeHtml(s){return typeof s==='string'?s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])):'';}
     })();
   </script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

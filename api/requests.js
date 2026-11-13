@@ -1,51 +1,65 @@
 const { randomUUID } = require('node:crypto');
-const { json, hashToken, verifySession, randomToken } = require('../lib/api');
+const { json, hashToken, verifySession, getWorkspaceMeta, randomToken } = require('../lib/api');
 const database = require('../lib/db');
 const { sendMail } = require('../lib/mailer');
 
-function clean(value, max) { return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : ''; }
-function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
+function clean(value, max) {
+  return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : '';
+}
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function ensureContractsTable(sql) {
+  await sql`
+    CREATE TABLE IF NOT EXISTS contract_requests (
+      id text primary key,
+      workspace text not null default '7layer',
+      title text not null,
+      provider_name text not null,
+      provider_email text not null,
+      client_company text,
+      client_name text not null,
+      client_email text not null,
+      effective_date date,
+      terms text not null,
+      token_hash text not null unique,
+      token text,
+      status text not null default 'pending' check (status in ('pending', 'signed')),
+      created_at timestamptz not null default now(),
+      signed_at timestamptz,
+      signer_name text,
+      signer_ip text,
+      signer_user_agent text,
+      signer_consent boolean not null default false,
+      provider_signer_name text,
+      provider_signed_at timestamptz
+    );
+  `;
+  await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS workspace text NOT NULL DEFAULT '7layer';`;
+  await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS token text;`;
+  await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signer_name text;`;
+  await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signed_at timestamptz;`;
+  await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS client_company text;`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_contract_requests_workspace ON contract_requests (workspace, created_at DESC);`;
+}
 
 module.exports = async (req, res) => {
   const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+  const sess = verifySession(req);
 
-  // GET: List contracts or get specific contract
+  // GET: List contracts or get specific contract scoped strictly to the signed-in workspace
   if (req.method === 'GET') {
-    if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again.' });
+    if (!sess) return json(res, 401, { error: 'Please sign in again.' });
+    const ws = sess.workspace;
+
     if (!dbUrl) {
-      return json(res, 200, { ok: false, requests: [], error: 'Database is not connected yet. Connect Neon in your Vercel Storage settings.' });
+      return json(res, 200, { ok: false, workspace: ws, requests: [], error: 'Database is not connected yet. Connect Neon in your Vercel Storage settings.' });
     }
 
     try {
       const sql = database();
-      // Ensure the table and dual-signature columns exist automatically
-      await sql`
-        CREATE TABLE IF NOT EXISTS contract_requests (
-          id text primary key,
-          title text not null,
-          provider_name text not null,
-          provider_email text not null,
-          client_name text not null,
-          client_email text not null,
-          effective_date date,
-          terms text not null,
-          token_hash text not null unique,
-          token text,
-          status text not null default 'pending' check (status in ('pending', 'signed')),
-          created_at timestamptz not null default now(),
-          signed_at timestamptz,
-          signer_name text,
-          signer_ip text,
-          signer_user_agent text,
-          signer_consent boolean not null default false,
-          provider_signer_name text,
-          provider_signed_at timestamptz
-        );
-      `;
-      await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS token text;`;
-      await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signer_name text;`;
-      await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS provider_signed_at timestamptz;`;
-      await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS client_company text;`;
+      await ensureContractsTable(sql);
 
       const host = req.headers['x-forwarded-host'] || req.headers.host;
       const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -54,21 +68,22 @@ module.exports = async (req, res) => {
 
       if (req.query && req.query.id) {
         const [row] = await sql`
-          SELECT id, title, provider_name, provider_email, client_company, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent, provider_signer_name, provider_signed_at, token
+          SELECT id, workspace, title, provider_name, provider_email, client_company, client_name, client_email, effective_date, terms, status, created_at, signed_at, signer_name, signer_ip, signer_user_agent, provider_signer_name, provider_signed_at, token
           FROM contract_requests
-          WHERE id = ${req.query.id}
+          WHERE id = ${req.query.id} AND workspace = ${ws}
           LIMIT 1
         `;
-        if (!row) return json(res, 404, { error: 'Contract request not found.' });
+        if (!row) return json(res, 404, { error: 'Contract request not found in this workspace.' });
         if (row.token) {
           row.signUrl = `${appUrl}/sign.html?token=${encodeURIComponent(row.token)}`;
         }
-        return json(res, 200, { ok: true, request: row });
+        return json(res, 200, { ok: true, workspace: ws, request: row });
       }
 
       const rows = await sql`
-        SELECT id, title, provider_name, provider_email, client_company, client_name, client_email, effective_date, status, created_at, signed_at, signer_name, token
+        SELECT id, workspace, title, provider_name, provider_email, client_company, client_name, client_email, effective_date, status, created_at, signed_at, signer_name, token
         FROM contract_requests
+        WHERE workspace = ${ws}
         ORDER BY created_at DESC
         LIMIT 100
       `;
@@ -76,22 +91,24 @@ module.exports = async (req, res) => {
         ...r,
         signUrl: r.token ? `${appUrl}/sign.html?token=${encodeURIComponent(r.token)}` : null
       }));
-      return json(res, 200, { ok: true, requests: requestsWithUrls });
+      return json(res, 200, { ok: true, workspace: ws, requests: requestsWithUrls });
     } catch (error) {
       console.error('List contract requests failed:', error.message);
-      return json(res, 200, { ok: false, requests: [], error: error.message });
+      return json(res, 200, { ok: false, workspace: ws, requests: [], error: error.message });
     }
   }
 
-  // DELETE: Delete a contract request
+  // DELETE: Delete a contract request strictly within the signed-in workspace
   if (req.method === 'DELETE') {
-    if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again.' });
+    if (!sess) return json(res, 401, { error: 'Please sign in again.' });
+    const ws = sess.workspace;
     if (!dbUrl) return json(res, 503, { error: 'Database is not connected.' });
     const id = req.query?.id || req.body?.id;
     if (!id) return json(res, 400, { error: 'Contract ID is required.' });
     try {
       const sql = database();
-      await sql`DELETE FROM contract_requests WHERE id = ${id}`;
+      await ensureContractsTable(sql);
+      await sql`DELETE FROM contract_requests WHERE id = ${id} AND workspace = ${ws}`;
       return json(res, 200, { ok: true, message: 'Contract deleted.' });
     } catch (err) {
       console.error('Delete contract failed:', err.message);
@@ -99,26 +116,30 @@ module.exports = async (req, res) => {
     }
   }
 
-  // POST: Create a new contract signature request
+  // POST: Create a new contract signature request scoped strictly to the signed-in workspace
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
-  if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again before sending a request.' });
-  
+  if (!sess) return json(res, 401, { error: 'Please sign in again before sending a request.' });
+
   if (!dbUrl) {
     return json(res, 503, { error: 'Database is not connected. Connect Neon or add POSTGRES_URL in Vercel settings.' });
   }
 
   try {
+    const ws = sess.workspace;
+    const meta = getWorkspaceMeta(ws);
     const data = req.body || {};
     const token = randomToken();
-    let providerEmail = clean(data.providerEmail, 254).toLowerCase() || 'contracts@7layer.store';
+
+    let providerEmail = clean(data.providerEmail, 254).toLowerCase() || meta.defaultEmail;
     if (providerEmail === 'contract@7layer.store') providerEmail = 'contracts@7layer.store';
-    let clientEmail = clean(data.email, 254).toLowerCase();
+    const clientEmail = clean(data.email, 254).toLowerCase();
 
     const record = {
       id: randomUUID(),
+      workspace: ws,
       title: clean(data.title, 160) || 'Agreement',
-      provider: clean(data.provider, 160) || '7Layer Studio',
-      providerSigner: clean(data.providerSigner, 160) || 'Julia Singerman',
+      provider: clean(data.provider, 160) || meta.brandName,
+      providerSigner: clean(data.providerSigner, 160) || meta.defaultSigner,
       clientCompany: clean(data.clientCompany, 160),
       client: clean(data.client, 160),
       providerEmail,
@@ -134,8 +155,18 @@ module.exports = async (req, res) => {
     }
 
     const sql = database();
-    await sql`INSERT INTO contract_requests (id,title,provider_name,provider_email,client_company,client_name,client_email,effective_date,terms,token_hash,token,provider_signer_name,provider_signed_at)
-      VALUES (${record.id},${record.title},${record.provider},${record.providerEmail},${record.clientCompany},${record.client},${record.clientEmail},${record.date},${record.terms},${record.tokenHash},${token},${record.providerSigner},now())`;
+    await ensureContractsTable(sql);
+    await sql`
+      INSERT INTO contract_requests (
+        id, workspace, title, provider_name, provider_email, client_company, client_name,
+        client_email, effective_date, terms, token_hash, token, provider_signer_name, provider_signed_at
+      )
+      VALUES (
+        ${record.id}, ${record.workspace}, ${record.title}, ${record.provider}, ${record.providerEmail},
+        ${record.clientCompany}, ${record.client}, ${record.clientEmail}, ${record.date}, ${record.terms},
+        ${record.tokenHash}, ${token}, ${record.providerSigner}, now()
+      )
+    `;
 
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -147,6 +178,7 @@ module.exports = async (req, res) => {
     let emailError = null;
     try {
       const result = await sendMail({
+        workspace: ws,
         to: record.clientEmail,
         subject: `Signature requested: ${record.title}`,
         html: `
@@ -175,6 +207,7 @@ module.exports = async (req, res) => {
 
     return json(res, 201, {
       ok: true,
+      workspace: ws,
       emailSent,
       emailError,
       signUrl,

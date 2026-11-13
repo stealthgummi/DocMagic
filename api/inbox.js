@@ -1,17 +1,34 @@
 const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
-const { json, verifySession } = require('../lib/api');
+const { json, sanitize, normalizeWorkspace, verifySession } = require('../lib/api');
 
 function escapeHtml(s) {
-  return typeof s === 'string' ? s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])) : '';
+  return typeof s === 'string' ? s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) : '';
 }
 
-function sanitize(val) {
-  if (typeof val !== 'string') return '';
-  return val.trim().replace(/^["']|["']$/g, '');
-}
+function getImapConfig(workspace = '7layer') {
+  const ws = normalizeWorkspace(workspace);
+  const defaultWs = normalizeWorkspace(process.env.DEFAULT_WORKSPACE);
 
-function getImapConfig() {
+  if (ws === 'flipbooks') {
+    const host = sanitize(process.env.FLIPBOOKS_IMAP_HOST) || sanitize(process.env.IMAP_HOST) || 'imap.hostinger.com';
+    const port = parseInt(sanitize(process.env.FLIPBOOKS_IMAP_PORT) || sanitize(process.env.IMAP_PORT) || '993', 10);
+    const secure = process.env.IMAP_SECURE !== 'false';
+    const auth = {
+      user:
+        sanitize(process.env.FLIPBOOKS_IMAP_USER) ||
+        sanitize(process.env.FLIPBOOKS_SMTP_USER) ||
+        (defaultWs === 'flipbooks' ? sanitize(process.env.IMAP_USER || process.env.SMTP_USER) : '') ||
+        'license@flipbooks.media',
+      pass:
+        sanitize(process.env.FLIPBOOKS_IMAP_PASS) ||
+        sanitize(process.env.FLIPBOOKS_SMTP_PASS) ||
+        (defaultWs === 'flipbooks' ? sanitize(process.env.IMAP_PASS || process.env.SMTP_PASS) : '')
+    };
+    if (!auth.user || !auth.pass) return null;
+    return { host, port, secure, auth, logger: false };
+  }
+
   const host = sanitize(process.env.IMAP_HOST) || 'imap.hostinger.com';
   const port = parseInt(sanitize(process.env.IMAP_PORT) || '993', 10);
   const secure = process.env.IMAP_SECURE !== 'false';
@@ -29,28 +46,32 @@ function getImapConfig() {
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') return json(res, 405, { error: 'Method not allowed' });
-  if (!verifySession(req)) return json(res, 401, { error: 'Please sign in again before accessing inbox.' });
+  const sess = verifySession(req);
+  if (!sess) return json(res, 401, { error: 'Please sign in again before accessing inbox.' });
 
-  const imapConfig = getImapConfig();
+  const ws = sess.workspace;
+  const imapConfig = getImapConfig(ws);
   if (!imapConfig) {
+    const envHint = ws === 'flipbooks'
+      ? 'Flipbooks Media inbox is not configured yet. Add FLIPBOOKS_SMTP_USER and FLIPBOOKS_SMTP_PASS in Vercel settings.'
+      : 'Email inbox is not configured yet. Add SMTP_USER and SMTP_PASS in Vercel settings.';
     return json(res, 200, {
       ok: false,
+      workspace: ws,
       messages: [],
-      error: 'Email inbox is not configured yet. Add SMTP_USER and SMTP_PASS in Vercel settings.'
+      error: envHint
     });
   }
 
   const client = new ImapFlow(imapConfig);
 
   try {
-    // Attempt connection with timeout
     await client.connect();
     const lock = await client.getMailboxLock('INBOX');
 
     try {
       const uidParam = req.query.uid;
 
-      // If specific email requested
       if (uidParam) {
         const uid = parseInt(uidParam, 10);
         const message = await client.fetchOne(uid, { source: true, flags: true, envelope: true }, { uid: true });
@@ -61,6 +82,7 @@ module.exports = async (req, res) => {
         const parsed = await simpleParser(message.source);
         return json(res, 200, {
           ok: true,
+          workspace: ws,
           message: {
             uid: message.uid,
             seq: message.seq,
@@ -75,11 +97,10 @@ module.exports = async (req, res) => {
         });
       }
 
-      // Otherwise fetch list of latest 30 messages
       const status = await client.status('INBOX', { messages: true });
       const total = status.messages || 0;
       if (total === 0) {
-        return json(res, 200, { ok: true, account: imapConfig.auth.user, messages: [] });
+        return json(res, 200, { ok: true, workspace: ws, account: imapConfig.auth.user, messages: [] });
       }
 
       const rangeStart = Math.max(1, total - 29);
@@ -100,16 +121,15 @@ module.exports = async (req, res) => {
         });
       }
 
-      // Sort newest first
       list.sort((a, b) => new Date(b.date) - new Date(a.date));
 
       return json(res, 200, {
         ok: true,
+        workspace: ws,
         account: imapConfig.auth.user,
         total,
         messages: list
       });
-
     } finally {
       lock.release();
     }
@@ -117,6 +137,7 @@ module.exports = async (req, res) => {
     console.warn('IMAP connection warning:', err.message);
     return json(res, 200, {
       ok: false,
+      workspace: ws,
       messages: [],
       account: imapConfig.auth.user,
       error: `Could not connect to ${imapConfig.auth.user}: ${err.message}. Please verify the mailbox exists in Hostinger and uses this password.`

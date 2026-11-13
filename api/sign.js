@@ -1,4 +1,4 @@
-const { json, env, hashToken } = require('../lib/api');
+const { json, env, hashToken, getWorkspaceMeta } = require('../lib/api');
 const database = require('../lib/db');
 const { sendMail } = require('../lib/mailer');
 
@@ -12,6 +12,7 @@ module.exports = async (req, res) => {
   try {
     env();
     const sql = database();
+    await sql`ALTER TABLE contract_requests ADD COLUMN IF NOT EXISTS workspace text NOT NULL DEFAULT '7layer';`;
 
     // GET: Retrieve agreement for signing/reviewing
     if (req.method === 'GET') {
@@ -19,21 +20,23 @@ module.exports = async (req, res) => {
       if (token.length < 30) return json(res, 400, { error: 'This signing link is not valid.' });
 
       const rows = await sql`
-        SELECT id, title, provider_name, provider_signer_name, provider_signed_at, provider_email,
+        SELECT id, workspace, title, provider_name, provider_signer_name, provider_signed_at, provider_email,
                client_company, client_name, client_email, effective_date, terms, status, created_at, signed_at,
                signer_name, signer_ip, token
-        FROM contract_requests 
-        WHERE token_hash=${hashToken(token)} 
+        FROM contract_requests
+        WHERE token_hash=${hashToken(token)}
         LIMIT 1
       `;
       if (!rows.length) return json(res, 404, { error: 'This signing link is invalid or has expired.' });
 
       const row = rows[0];
+      const wsMeta = getWorkspaceMeta(row.workspace || '7layer');
       return json(res, 200, {
         id: row.id,
+        workspace: wsMeta.id,
         title: row.title,
         provider: row.provider_name,
-        providerSigner: row.provider_signer_name || 'Julia Singerman',
+        providerSigner: row.provider_signer_name || wsMeta.defaultSigner,
         providerSignedAt: row.provider_signed_at || row.created_at,
         providerEmail: row.provider_email,
         clientCompany: row.client_company || '',
@@ -62,9 +65,9 @@ module.exports = async (req, res) => {
 
     if (role === 'provider') {
       const updated = await sql`
-        UPDATE contract_requests 
+        UPDATE contract_requests
         SET provider_signer_name=${signerName}, provider_signed_at=now()
-        WHERE token_hash=${hashToken(token)} 
+        WHERE token_hash=${hashToken(token)}
         RETURNING id
       `;
       if (!updated.length) return json(res, 404, { error: 'Could not update provider signature.' });
@@ -73,14 +76,14 @@ module.exports = async (req, res) => {
 
     // Client signature (or final execution)
     const updated = await sql`
-      UPDATE contract_requests 
+      UPDATE contract_requests
       SET status='signed',
           signed_at=now(),
           signer_name=${signerName},
           signer_ip=${ip},
           signer_user_agent=${userAgent},
           signer_consent=true
-      WHERE token_hash=${hashToken(token)} AND status='pending' 
+      WHERE token_hash=${hashToken(token)} AND status='pending'
       RETURNING id
     `;
     if (!updated.length) {
@@ -88,20 +91,23 @@ module.exports = async (req, res) => {
     }
 
     const [agreement] = await sql`
-      SELECT id, title, provider_email, client_email, provider_name, provider_signer_name, provider_signed_at,
-             client_company, client_name, terms, signed_at, signer_name, signer_ip 
-      FROM contract_requests 
-      WHERE id=${updated[0].id} 
+      SELECT id, workspace, title, provider_email, client_email, provider_name, provider_signer_name, provider_signed_at,
+             client_company, client_name, terms, signed_at, signer_name, signer_ip
+      FROM contract_requests
+      WHERE id=${updated[0].id}
       LIMIT 1
     `;
 
     if (agreement) {
-      const provSigner = agreement.provider_signer_name || 'Julia Singerman';
+      const wsMeta = getWorkspaceMeta(agreement.workspace || '7layer');
+      const provSigner = agreement.provider_signer_name || wsMeta.defaultSigner;
       const provSignedDate = new Date(agreement.provider_signed_at || agreement.signed_at).toLocaleString();
       const clientSignedDate = new Date(agreement.signed_at).toLocaleString();
-      const clientEntityLabel = agreement.client_company ? `${escapeHtml(agreement.signer_name)} (for ${escapeHtml(agreement.client_company)})` : escapeHtml(agreement.client_name);
+      const clientEntityLabel = agreement.client_company
+        ? `${escapeHtml(agreement.signer_name)} (for ${escapeHtml(agreement.client_company)})`
+        : escapeHtml(agreement.client_name);
 
-      let notifyEmail = (agreement.provider_email || '').trim().toLowerCase() || 'contracts@7layer.store';
+      let notifyEmail = (agreement.provider_email || '').trim().toLowerCase() || wsMeta.defaultEmail;
       if (notifyEmail === 'contract@7layer.store') notifyEmail = 'contracts@7layer.store';
       const clientEmail = (agreement.client_email || '').trim().toLowerCase();
 
@@ -129,7 +135,7 @@ module.exports = async (req, res) => {
           <div style="background: #f7f7f2; border: 1px solid #e7e8e1; padding: 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; font-family: Georgia, serif;">${escapeHtml(agreement.terms)}</div>
 
           <div style="margin-top: 24px; padding-top: 14px; border-top: 1px solid #e7e8e1; font-size: 11px; color: #73796f; line-height: 1.5;">
-            <strong>Audit Trail Verification:</strong> Executed via DocMagic E-Sign. Signer IP: ${escapeHtml(agreement.signer_ip || 'Recorded')} · Timestamp: ${clientSignedDate}. An indelible electronic archive record has been generated.
+            <strong>Audit Trail Verification:</strong> Executed via ${escapeHtml(wsMeta.brandName)} E-Sign Portal. Signer IP: ${escapeHtml(agreement.signer_ip || 'Recorded')} · Timestamp: ${clientSignedDate}. An indelible electronic archive record has been generated.
           </div>
         </div>
       `;
@@ -139,6 +145,7 @@ module.exports = async (req, res) => {
       // Email 1: Send to Provider
       try {
         await sendMail({
+          workspace: wsMeta.id,
           to: notifyEmail,
           subject: `✓ Executed Agreement: ${agreement.title} (${agreement.client_company ? `${agreement.client_company} - ` : ''}${agreement.client_name})`,
           html: executedHtml,
@@ -152,6 +159,7 @@ module.exports = async (req, res) => {
       if (clientEmail && clientEmail !== notifyEmail) {
         try {
           await sendMail({
+            workspace: wsMeta.id,
             to: clientEmail,
             subject: `✓ Your Executed Agreement Copy: ${agreement.title}`,
             html: executedHtml,

@@ -568,19 +568,21 @@
       consentCheck.addEventListener('change', updatePreview);
 
       function renderDualSignatures(d) {
+        const isFb = d.workspace === 'flipbooks';
         const isClientSigned = d.status === 'signed' && d.signer;
         const provSignedDate = d.providerSignedAt 
           ? new Date(d.providerSignedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
           : (d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '—');
         const clientSignedDate = d.signedAt ? new Date(d.signedAt).toLocaleString() : '';
-        const provSigner = d.providerSigner || 'Julia Singerman';
+        const provSigner = d.providerSigner || (isFb ? 'Jaque Hill' : 'Julia Singerman');
+        const provBrand = d.provider || (isFb ? 'Flipbooks Media' : '7Layer Studio');
 
         el('dualSignatures').innerHTML = `
           <div class="sig-card executed">
             <span class="sig-badge signed">✓ Provider Authorized</span>
             <div class="sig-name">✓ ${esc(provSigner)}</div>
             <div class="sig-detail">
-              <strong>${esc(d.provider || '7Layer Studio')}</strong><br>
+              <strong>${esc(provBrand)}</strong><br>
               Authorized Signature<br>
               Date: ${provSignedDate}
             </div>
@@ -605,7 +607,8 @@
       }
 
       function renderExecutedSuccess(d) {
-        const provSigner = d.providerSigner || 'Julia Singerman';
+        const isFb = d.workspace === 'flipbooks';
+        const provSigner = d.providerSigner || (isFb ? 'Jaque Hill' : 'Julia Singerman');
         const clientSigner = d.signer || 'Client Signer';
         const signedAt = d.signedAt ? new Date(d.signedAt).toLocaleString() : new Date().toLocaleString();
         const provDate = d.providerSignedAt ? new Date(d.providerSignedAt).toLocaleString() : signedAt;
@@ -658,7 +661,7 @@
           el('signBoxHeading').textContent = `Update Provider Signature (${currentDoc.provider})`;
           el('signBoxHint').textContent = `Authorized signer for ${currentDoc.provider}.`;
           el('signerLabel').innerHTML = `Authorized Signer Name for <strong>${esc(currentDoc.provider)}</strong>`;
-          nameInput.placeholder = `e.g. ${currentDoc.providerSigner || 'Julia Singerman'}`;
+          nameInput.placeholder = `e.g. ${currentDoc.providerSigner || (currentDoc.workspace === 'flipbooks' ? 'Jaque Hill' : 'Julia Singerman')}`;
           el('signBtnText').textContent = `Authorize as Provider (${currentDoc.provider})`;
         }
         updatePreview();
@@ -697,7 +700,7 @@
             : esc(d.client);
 
           el('meta').innerHTML = `
-            <strong>Provider:</strong> ${esc(d.provider)} (Represented by ${esc(d.providerSigner || 'Julia Singerman')})<br>
+            <strong>Provider:</strong> ${esc(d.provider)} (Represented by ${esc(d.providerSigner || (d.workspace === 'flipbooks' ? 'Jaque Hill' : 'Julia Singerman'))})<br>
             <strong>Client / Recipient:</strong> ${clientParty}<br>
             <strong>Effective Date:</strong> ${d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString() : 'Upon mutual signature'}
           `;
@@ -767,6 +770,7 @@
       });
     })();
   </script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </body>
 
 </html>
